@@ -15,11 +15,11 @@ app.get("/", (_req, res) => {
   res.send(`<h1>Welcome to my Server</h1>`);
 });
 
-// // Routes
-// const patientsRouter = require("./routes/patients");
-// const medicationsRouter = require("./routes/medications");
-// app.use("/patients", patientsRouter);
-// app.use("/medications", medicationsRouter);
+// Routes
+const patientsRouter = require("./routes/patient-route");
+const medicationsRouter = require("./routes/medication-route");
+app.use("/patients", patientsRouter);
+app.use("/medications", medicationsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
