@@ -45,17 +45,29 @@ const findOne = async (req, res) => {
 };
 
 //remove a patient
+const remove = async (req, res) => {
+  try {
+    const rowsDeleted = await knex("patients")
+      .where({ id: req.params.id })
+      .delete();
 
-// const remove = async (req, res) => {
-//     try {
-//         const rowsDeleted = await knex("patients")
-//         .where({id: re})
-//     } catch (error) {
+    if (rowsDeleted === 0) {
+      return res
+        .status(404)
+        .json({ message: `Patient with ID ${req.params.id} not found` });
+    }
 
-//     }
-// }
+    res
+      .sendStatus(204);
+  } catch (error) {
+    res.status(500).json({ message: `Unable to delete patient; ${error}` });
+  }
+};
+
+
 
 module.exports = {
   index,
   findOne,
+  remove,
 };
