@@ -146,21 +146,24 @@ const updatePatient = async (req, res) => {
   }
 };
 
-
 const findMedicationsByPatient = async (req, res) => {
   try {
-    const patientId = req.params.patient_id;
+    const patientId = req.params.id;
 
     const medications = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
+      .join(
+        "schedule",
+        "medications.id",
+        "schedule.medication_id"
+      )
       .select(
         "medications.id as id",
         "patients.patient_name",
         "med_name",
         "med_dose",
-        "med_schedule",
-        "med_time",
-        "med_taken",
+        "schedule.med_time",
+        "schedule.med_taken",
         "quantity"
       )
       .where("medications.patient_id", patientId);

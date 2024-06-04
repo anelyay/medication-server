@@ -5,15 +5,15 @@ const findMedications = async (_req, res) => {
   try {
     const medications = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
+      .join("schedule", "medications.id", "schedule.medication_id")
       .select(
-        "medications.id as id",
+        "medications.id",
         "patients.patient_name",
-        "med_name",
-        "med_dose",
-        "med_schedule",
-        "med_time",
-        "med_taken",
-        "quantity"
+        "medications.med_name",
+        "medications.med_dose",
+        "schedule.med_time",
+        "schedule.med_taken",
+        "medications.quantity"
       );
 
     const formattedMedications = medications.map((pill) => ({
@@ -34,15 +34,15 @@ const findMedication = async (req, res) => {
 
     const medication = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
+      .join("schedule", "medications.id", "schedule.medication_id")
       .select(
-        "medications.id as id",
+        "medications.id",
         "patients.patient_name",
-        "med_name",
-        "med_dose",
-        "med_schedule",
-        "med_time",
-        "med_taken",
-        "quantity"
+        "medications.med_name",
+        "medications.med_dose",
+        "schedule.med_time",
+        "schedule.med_taken",
+        "medications.quantity"
       )
       .where("medications.id", medicationId)
       .first();
@@ -74,9 +74,6 @@ const updateMedication = async (req, res) => {
     patient_id,
     med_name,
     med_dose,
-    med_schedule,
-    med_time,
-    med_taken,
     quantity,
   } = req.body;
 
