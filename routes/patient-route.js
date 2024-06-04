@@ -2,17 +2,19 @@ const express = require("express");
 const router = express.Router();
 const patientsController = require("../controller/patients-controller");
 
-router.route("/")
-.get(patientsController.index)
-.post(patientsController.add);
+router
+  .route("/")
+  .get(patientsController.findPatients)
+  .post(patientsController.addPatient);
 
 router
   .route("/:id")
-  .get(patientsController.findOne)
-  .delete(patientsController.remove)
-  .put(patientsController.update);
+  .get(patientsController.findPatient)
+  .delete(patientsController.removePatient)
+  .put(patientsController.updatePatient);
 
-router.route("/:id/medications");
-// .get(patientsController.findAllForOne);
+router
+  .route("/:id/medications")
+  .get(patientsController.findMedicationsByPatient);
 
 module.exports = router;

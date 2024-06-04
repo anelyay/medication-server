@@ -17,7 +17,7 @@ const formatDate = (dateString) => {
 };
 
 //get all patients
-const index = async (_req, res) => {
+const findPatients = async (_req, res) => {
   try {
     const patients = await knex("patients").select(selectPatientFields());
 
@@ -28,7 +28,7 @@ const index = async (_req, res) => {
 };
 
 //get one patient
-const findOne = async (req, res) => {
+const findPatient = async (req, res) => {
   try {
     const patientFound = await knex("patients")
       .select(selectPatientFields())
@@ -53,7 +53,7 @@ const findOne = async (req, res) => {
 };
 
 //remove a patient
-const remove = async (req, res) => {
+const removePatient = async (req, res) => {
   try {
     const rowsDeleted = await knex("patients")
       .where({ id: req.params.id })
@@ -73,7 +73,7 @@ const remove = async (req, res) => {
 
 // add a patient
 
-const add = async (req, res) => {
+const addPatient = async (req, res) => {
   const { patient_name, patient_dob, patient_allergy, patient_md } = req.body;
 
   const errors = [];
@@ -110,7 +110,7 @@ const add = async (req, res) => {
 };
 
 //update a patient
-const update = async (req, res) => {
+const updatePatient = async (req, res) => {
   const { patient_name, patient_dob, patient_allergy, patient_md } = req.body;
 
   const errors = [];
@@ -146,10 +146,50 @@ const update = async (req, res) => {
   }
 };
 
+
+const findMedicationsByPatient = async (req, res) => {
+  try {
+    const patientId = req.params.patient_id;
+
+    const medications = await knex("medications")
+      .join("patients", "medications.patient_id", "patients.id")
+      .select(
+        "medications.id as id",
+        "patients.patient_name",
+        "med_name",
+        "med_dose",
+        "med_schedule",
+        "med_time",
+        "med_taken",
+        "quantity"
+      )
+      .where("medications.patient_id", patientId);
+
+    if (medications.length === 0) {
+      return res.status(404).json({
+        message: `No medications found for patient with ID ${patientId}`,
+      });
+    }
+
+    const formattedMedications = medications.map((pill) => ({
+      ...pill,
+      med_taken: pill.med_taken === 1,
+    }));
+
+    res.status(200).json(formattedMedications);
+  } catch (error) {
+    res.status(500).json({
+      message: `Unable to retrieve medications for patient with ID ${patientId}: ${error.message}`,
+    });
+  }
+};
+
+
 module.exports = {
-  index,
-  findOne,
-  remove,
-  add,
-  update
+  findPatients,
+  findPatient,
+  removePatient,
+  addPatient,
+  updatePatient,
+  findMedicationsByPatient,
 };
