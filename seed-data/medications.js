@@ -5,7 +5,6 @@ module.exports = [
     med_name: "Lisinopril",
     med_dose: "10mg",
     quantity: 30,
-    num_capsules: 1,
   },
   {
     id: 2,
@@ -13,7 +12,6 @@ module.exports = [
     med_name: "Metformin",
     med_dose: "500mg",
     quantity: 60,
-    num_capsules: 1,
   },
   {
     id: 3,
@@ -21,7 +19,6 @@ module.exports = [
     med_name: "Amlodipine",
     med_dose: "5mg",
     quantity: 30,
-    num_capsules: 2,
   },
   {
     id: 4,
@@ -29,6 +26,6 @@ module.exports = [
     med_name: "Atorvastatin",
     med_dose: "20mg",
     quantity: 30,
-    num_capsules: 1,
+    notes:"take with food"
   },
 ];

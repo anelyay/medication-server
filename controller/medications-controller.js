@@ -13,7 +13,8 @@ const findMedications = async (_req, res) => {
         "medications.med_dose",
         "schedule.med_time",
         "schedule.med_taken",
-        "medications.quantity"
+        "medications.quantity",
+        "medications.notes"
       );
 
     const formattedMedications = medications.reduce((acc, row) => {
@@ -28,6 +29,7 @@ const findMedications = async (_req, res) => {
           med_name: row.med_name,
           med_dose: row.med_dose,
           quantity: row.quantity,
+          notes: row.notes,
           schedule: row.med_time
             ? [{ med_time: row.med_time, med_taken: row.med_taken === 1 }]
             : [],
@@ -63,7 +65,8 @@ const findMedication = async (req, res) => {
         "medications.med_dose",
         "schedule.med_time",
         "schedule.med_taken",
-        "medications.quantity"
+        "medications.quantity",
+        "medications.notes"
       )
       .where("medications.id", medicationId);
 
@@ -80,7 +83,8 @@ const findMedication = async (req, res) => {
         acc.med_name = row.med_name;
         acc.med_dose = row.med_dose;
         acc.quantity = row.quantity;
-        acc.schedule = [];
+        acc.notes= row.notes,
+         (acc.schedule = []);
       }
       acc.schedule.push({
         med_time: row.med_time,
@@ -100,7 +104,7 @@ const findMedication = async (req, res) => {
 //update medication
 const updateMedication = async (req, res) => {
   const medicationId = req.params.id;
-  const { patient_id, med_name, med_dose, quantity } = req.body;
+  const { patient_id, med_name, med_dose, quantity, notes } = req.body;
 
   const errors = [];
 
@@ -126,10 +130,8 @@ const updateMedication = async (req, res) => {
         patient_id,
         med_name,
         med_dose,
-        med_schedule,
-        med_time,
-        med_taken: med_taken ? 1 : 0,
         quantity,
+        notes
       });
 
     if (rowsUpdated === 0) {
@@ -145,10 +147,8 @@ const updateMedication = async (req, res) => {
         "patients.patient_name",
         "med_name",
         "med_dose",
-        "med_schedule",
-        "med_time",
-        "med_taken",
-        "quantity"
+        "quantity",
+        "notes"
       )
       .where("medications.id", medicationId)
       .first();
