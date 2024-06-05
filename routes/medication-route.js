@@ -14,10 +14,14 @@ router
   .put(medicationController.updateMedication);
 
 router
-  .route("/activity-log")
+  .route("/log")
   .post(medicationController.logActivity)
+
+router
+  .route("/log/:id")
   .get(medicationController.getActivityLog);
 
-router.route("/:id/taken").put(medicationController.markMedicationAsTaken);
+router.route("/taken/:id")
+  .put(medicationController.markMedicationAsTaken);
 
 module.exports = router;

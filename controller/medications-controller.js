@@ -7,39 +7,54 @@ const logActivity = async (
   med_time,
   updatedQuantity
 ) => {
-  try {
-    const takenAt = new Date().toISOString().slice(0, 19).replace("T", " ");
-    await knex("activity_log").insert({
-      med_taken,
-      med_time: `${new Date().toISOString().slice(0, 10)} ${med_time}`,
-      medication_id: medicationId,
-      taken_at: takenAt,
-      quantity: updatedQuantity,
-    });
-  } catch (error) {
-    console.error("Failed to log activity:", error);
-    throw error;
-  }
+    try {
+      const currentDate = new Date().toISOString().slice(0, 10);
+      const formattedMedTime = `${currentDate} ${med_time}`;
+
+      await knex("activity_log").insert({
+        med_taken,
+        med_time: formattedMedTime,
+        medication_id: medicationId,
+        quantity: updatedQuantity,
+      });
+    } catch (error) {
+      console.error("Failed to log activity:", error);
+      throw error;
+    }
 };
 
 // get log activity
 const getActivityLog = async (req, res) => {
-  try {
-    const logs = await knex("activity_log").join(
-      "medications",
-      "activity_log.medication_id",
-      "medications.id"
-    );
-    join("patients", "medications.patient_id", "patients.id").select(
-      "activity_log.id",
-      "patients.patient_name",
-      "medications.med_name",
-      "activity_log.action",
-      "activity_log.quantity",
-      "activity_log.taken_at"
-    );
+  const { id } = req.params;
 
-    res.status(200).json(logs);
+  try {
+    const logs = await knex("activity_log")
+      .join("medications", "activity_log.medication_id", "medications.id")
+      .select(
+        "activity_log.id",
+        "medications.med_name",
+        "activity_log.quantity",
+        "activity_log.log_time"
+      )
+      .where("activity_log.medication_id", id);
+
+    const formattedLogs = logs.map((log) => {
+      const date = new Date(log.log_time);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+
+      const formattedLogTime = `${year}-${month}-${day} ${hours}:${minutes}`;
+
+      return {
+        ...log,
+        log_time: formattedLogTime,
+      };
+    });
+
+    res.status(200).json(formattedLogs);
   } catch (error) {
     res
       .status(500)
@@ -181,7 +196,6 @@ const updateMedication = async (req, res) => {
     }
 
     const { patient_id: medicationPatientId } = medication;
-
 
     const rowsUpdated = await knex("medications")
       .where({ id: medicationId })
@@ -345,17 +359,11 @@ const markMedicationAsTaken = async (req, res) => {
       .where({ id: medication_id })
       .update({ quantity: newQuantity });
 
-    await logActivity(
-      medication_id,
-      med_taken ? 1 : 0,
-      med_time,
-      newQuantity
-    );
-
+    await logActivity(medication_id, med_taken ? 1 : 0, med_time, newQuantity);
 
     res
       .status(200)
-      .json({ message: "Medication taken status updated successfully" });
+      .json({ message: "Medication status has been updated successfully!" });
   } catch (error) {
     console.error("Error updating medication taken status:", error);
     res.status(500).json({ error: "Unable to update medication taken status" });
