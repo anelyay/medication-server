@@ -5,9 +5,9 @@ const findMedications = async (_req, res) => {
   try {
     const medications = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
-      .join("schedule", "medications.id", "schedule.medication_id")
+      .leftJoin("schedule", "medications.id", "schedule.medication_id")
       .select(
-        "medications.id",
+        "medications.id as medication_id",
         "patients.patient_name",
         "medications.med_name",
         "medications.med_dose",
@@ -16,10 +16,31 @@ const findMedications = async (_req, res) => {
         "medications.quantity"
       );
 
-    const formattedMedications = medications.map((pill) => ({
-      ...pill,
-      med_taken: pill.med_taken === 1,
-    }));
+    const formattedMedications = medications.reduce((acc, row) => {
+      const existingMedication = acc.find(
+        (med) => med.medication_id === row.medication_id
+      );
+
+      if (!existingMedication) {
+        acc.push({
+          medication_id: row.medication_id,
+          patient_name: row.patient_name,
+          med_name: row.med_name,
+          med_dose: row.med_dose,
+          quantity: row.quantity,
+          schedule: row.med_time
+            ? [{ med_time: row.med_time, med_taken: row.med_taken === 1 }]
+            : [],
+        });
+      } else if (row.med_time) {
+        existingMedication.schedule.push({
+          med_time: row.med_time,
+          med_taken: row.med_taken === 1,
+        });
+      }
+
+      return acc;
+    }, []);
 
     res.status(200).json(formattedMedications);
   } catch (error) {
@@ -32,11 +53,11 @@ const findMedication = async (req, res) => {
   try {
     const medicationId = req.params.id;
 
-    const medication = await knex("medications")
+    const rows = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
       .join("schedule", "medications.id", "schedule.medication_id")
       .select(
-        "medications.id",
+        "medications.id as medication_id",
         "patients.patient_name",
         "medications.med_name",
         "medications.med_dose",
@@ -44,21 +65,31 @@ const findMedication = async (req, res) => {
         "schedule.med_taken",
         "medications.quantity"
       )
-      .where("medications.id", medicationId)
-      .first();
+      .where("medications.id", medicationId);
 
-    if (!medication) {
+    if (rows.length === 0) {
       return res.status(404).json({
-        message: `medication with ID ${medicationId} not found`,
+        message: `Medication with ID ${medicationId} not found`,
       });
     }
 
-    const formattedMedication = {
-      ...medication,
-      med_taken: medication.med_taken === 1,
-    };
+    const medication = rows.reduce((acc, row) => {
+      if (!acc.medication_id) {
+        acc.medication_id = row.medication_id;
+        acc.patient_name = row.patient_name;
+        acc.med_name = row.med_name;
+        acc.med_dose = row.med_dose;
+        acc.quantity = row.quantity;
+        acc.schedule = [];
+      }
+      acc.schedule.push({
+        med_time: row.med_time,
+        med_taken: row.med_taken === 1,
+      });
+      return acc;
+    }, {});
 
-    res.status(200).json(formattedMedication);
+    res.status(200).json(medication);
   } catch (error) {
     res.status(500).json({
       message: `Unable to retrieve medication with ID ${medicationId}`,
@@ -66,16 +97,10 @@ const findMedication = async (req, res) => {
   }
 };
 
-
 //update medication
 const updateMedication = async (req, res) => {
   const medicationId = req.params.id;
-  const {
-    patient_id,
-    med_name,
-    med_dose,
-    quantity,
-  } = req.body;
+  const { patient_id, med_name, med_dose, quantity } = req.body;
 
   const errors = [];
 
@@ -226,19 +251,13 @@ const removeMedication = async (req, res) => {
         .json({ message: `Medication with ID ${medicationId} not found` });
     }
 
-    res
-      .status(200)
-      .json({
-        message: `Medication with ID ${medicationId} successfully deleted`,
-      });
+    res.status(200).json({
+      message: `Medication with ID ${medicationId} successfully deleted`,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: `Unable to delete medication: ${error}` });
+    res.status(500).json({ message: `Unable to delete medication: ${error}` });
   }
 };
-
-
 
 module.exports = {
   findMedications,
