@@ -13,4 +13,11 @@ router
   .delete(medicationController.removeMedication)
   .put(medicationController.updateMedication);
 
+router
+  .route("/activity-log")
+  .post(medicationController.logActivity)
+  .get(medicationController.getActivityLog);
+
+router.route("/:id/taken").put(medicationController.markMedicationAsTaken);
+
 module.exports = router;
