@@ -364,6 +364,47 @@ const markMedicationAsTaken = async (req, res) => {
   }
 };
 
+const markMedicationAsTakenWithNFC = async (req, res) => {
+  const { id: medication_id, time: med_time, taken: med_taken } = req.query;
+
+  console.log("Received query parameters:", req.query);
+  console.log("Parsed parameters:", { medication_id, med_time, med_taken });
+
+  try {
+    const medication = await knex("medications")
+      .where({ id: medication_id })
+      .first();
+
+    if (!medication) {
+      return res.status(404).json({ error: "Medication not found" });
+    }
+
+    const rowsUpdated = await knex("schedule")
+      .where({ medication_id, med_time })
+      .update({ med_taken: med_taken ? 1 : 0 });
+
+    if (rowsUpdated === 0) {
+      return res.status(404).json({ error: "Schedule entry not found" });
+    }
+
+    const originalQuantity = medication.quantity;
+    const newQuantity = originalQuantity - 1;
+
+    await knex("medications")
+      .where({ id: medication_id })
+      .update({ quantity: newQuantity });
+
+    await logActivity(medication_id, med_taken ? 1 : 0, med_time, newQuantity);
+
+    res
+      .status(200)
+      .json({ message: "Medication status has been updated successfully!" });
+  } catch (error) {
+    console.error("Error updating medication taken status:", error);
+    res.status(500).json({ error: "Unable to update medication taken status" });
+  }
+};
+
 module.exports = {
   findMedications,
   findMedication,
@@ -373,4 +414,5 @@ module.exports = {
   logActivity,
   markMedicationAsTaken,
   getActivityLog,
+  markMedicationAsTakenWithNFC,
 };

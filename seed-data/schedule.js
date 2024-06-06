@@ -3,7 +3,7 @@ module.exports = [
     id: 1,
     medication_id: 1,
     med_time: "8:00",
-    med_taken: true,
+    med_taken: false,
   },
   {
     id: 2,
@@ -21,7 +21,7 @@ module.exports = [
     id: 4,
     medication_id: 3,
     med_time: "11:00",
-    med_taken: true,
+    med_taken: false,
   },
   {
     id: 5,

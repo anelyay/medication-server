@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const patientsController = require("../controller/patients-controller");
+const patientsController = require("../controllers/patients-controller");
 
 router
   .route("/")
