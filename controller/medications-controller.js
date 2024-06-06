@@ -7,20 +7,20 @@ const logActivity = async (
   med_time,
   updatedQuantity
 ) => {
-    try {
-      const currentDate = new Date().toISOString().slice(0, 10);
-      const formattedMedTime = `${currentDate} ${med_time}`;
+  try {
+    const currentDate = new Date().toISOString().slice(0, 10);
+    const formattedMedTime = `${currentDate} ${med_time}`;
 
-      await knex("activity_log").insert({
-        med_taken,
-        med_time: formattedMedTime,
-        medication_id: medicationId,
-        quantity: updatedQuantity,
-      });
-    } catch (error) {
-      console.error("Failed to log activity:", error);
-      throw error;
-    }
+    await knex("activity_log").insert({
+      med_taken,
+      med_time: formattedMedTime,
+      medication_id: medicationId,
+      quantity: updatedQuantity,
+    });
+  } catch (error) {
+    console.error("Failed to log activity:", error);
+    throw error;
+  }
 };
 
 // get log activity
@@ -157,7 +157,7 @@ const findMedication = async (req, res) => {
     res.status(200).json(medication);
   } catch (error) {
     res.status(500).json({
-      message: `Unable to retrieve medication with ID ${medicationId}`,
+      message: `Unable to retrieve medication with ID ${req.params.id}`,
     });
   }
 };
@@ -197,33 +197,23 @@ const updateMedication = async (req, res) => {
 
     const { patient_id: medicationPatientId } = medication;
 
-    const rowsUpdated = await knex("medications")
-      .where({ id: medicationId })
-      .update({
-        patient_id,
-        med_name,
-        med_dose,
-        quantity,
-        notes,
-      });
+    await knex("medications").where({ id: medicationId }).update({
+      patient_id,
+      med_name,
+      med_dose,
+      quantity,
+      notes,
+    });
 
-    if (rowsUpdated === 0) {
-      return res.status(404).json({
-        message: `Medication with ID ${medicationId} not found`,
-      });
-    }
+    await knex("schedule").where({ medication_id: medicationId }).delete();
 
-    if (schedule && Array.isArray(schedule)) {
-      await knex("schedule").where({ medication_id: medicationId }).delete();
+    const scheduleEntries = schedule.map(({ med_time, med_taken }) => ({
+      medication_id: medicationId,
+      med_time,
+      med_taken: med_taken ? 1 : 0,
+    }));
 
-      const scheduleEntries = schedule.map(({ med_time, med_taken }) => ({
-        medication_id: medicationId,
-        med_time,
-        med_taken: med_taken ? 1 : 0,
-      }));
-
-      await knex("schedule").insert(scheduleEntries);
-    }
+    await knex("schedule").insert(scheduleEntries);
 
     const updatedMedication = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
@@ -251,14 +241,15 @@ const updateMedication = async (req, res) => {
 
 //add a medication
 const addMedication = async (req, res) => {
-  const { patient_id, med_name, med_dose, med_times, quantity } = req.body;
+  const { patient_id, med_name, med_dose, schedule, quantity, notes } =
+    req.body;
 
   const errors = [];
 
   if (!patient_id) errors.push({ msg: "Patient ID is required" });
   if (!med_name) errors.push({ msg: "Medication name is required" });
   if (!med_dose) errors.push({ msg: "Dose is required" });
-  if (!med_times || !Array.isArray(med_times) || med_times.length === 0) {
+  if (!schedule || !Array.isArray(schedule) || schedule.length === 0) {
     errors.push({ msg: "Schedule is required and must be a non-empty array" });
   }
   if (quantity === undefined || quantity <= 0) {
@@ -277,13 +268,15 @@ const addMedication = async (req, res) => {
       med_name,
       med_dose,
       quantity,
+      notes,
     });
 
     const newMedicationId = result[0];
 
-    const scheduleEntries = med_times.map((med_time) => ({
+    const scheduleEntries = schedule.map((entry) => ({
       medication_id: newMedicationId,
-      med_time,
+      med_time: entry.med_time,
+      med_taken: entry.med_taken,
     }));
 
     await knex("schedule").insert(scheduleEntries);
@@ -295,7 +288,8 @@ const addMedication = async (req, res) => {
         "patients.patient_name",
         "med_name",
         "med_dose",
-        "quantity"
+        "quantity",
+        "notes"
       )
       .where("medications.id", newMedicationId)
       .first();
