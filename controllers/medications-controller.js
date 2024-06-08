@@ -1,4 +1,6 @@
 const knex = require("knex")(require("../knexfile"));
+const cron = require("node-cron");
+
 
 // log activity
 const logActivity = async (
@@ -404,6 +406,18 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
     res.status(500).json({ error: "Unable to update medication taken status" });
   }
 };
+
+
+// reset all med_taken to false at midnight
+cron.schedule("0 0 * * *", async () => {
+  try {
+    await knex("schedule").update({ med_taken: false });
+    console.log("Reset med_taken status for all medications");
+  } catch (error) {
+    console.error("Error resetting med_taken status:", error);
+  }
+});
+
 
 module.exports = {
   findMedications,

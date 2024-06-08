@@ -1,7 +1,9 @@
 const express = require("express");
 const cors = require("cors");
-const multer = require ("multer");
+const multer = require("multer");
 const tesseract = require("node-tesseract-ocr");
+const path = require("path");
+const fs = require("fs");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -14,13 +16,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const upload = multer({ dest: "backend/uploads/" });
+const medicin_arr = [
+  "ASPIRIN",
+  "ROCHE",
+  "ROCHE-POSAY",
+  "METHYL",
+  "FOLANTE",
+  "ADVIL",
+  "TYLENOL",
+];
+
+const upload = multer({ dest: "backend/uploads" });
 
 app.post("/files", upload.single("screenshots"), (req, res) => {
-  // return received files info back to frontend
-  res.json(req.file.originalname);
   console.log(req.file);
 
+  // Configuration for Tesseract
   const config = {
     lang: "eng",
     oem: 1,
@@ -30,11 +41,49 @@ app.post("/files", upload.single("screenshots"), (req, res) => {
   tesseract
     .recognize(req.file.path, config)
     .then((text) => {
-      ///////// text PRINT RESULT OF RECOGNITION ////////////
-      console.log("Text:", text);
+      console.log("Result text: ", text);
+
+      // Convert text to uppercase
+      let result_upper = text.toUpperCase();
+      console.log("Res_upper text: ", result_upper);
+
+      // Convert text to array
+      var result_array = result_upper.split(/(\s+)/);
+
+      let foundElement = null;
+      for (const element of result_array) {
+        console.log(element);
+        if (medicin_arr.includes(element)) {
+          foundElement = element;
+          console.log("Found:", element);
+          break; // Break out of the loop once a match is found
+        }
+      }
+
+      // Return recognized text or a not found message
+      if (foundElement) {
+        res.json({ found: foundElement });
+      } else {
+        res.json({ found: null });
+      }
+
+      // Clean up the uploaded file
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error("Failed to delete uploaded file", err);
+        }
+      });
     })
     .catch((error) => {
-      console.log(error.message);
+      console.error("Error processing image:", error.message);
+      res.status(500).json({ error: error.message });
+
+      // Clean up the uploaded file in case of an error
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error("Failed to delete uploaded file after error", err);
+        }
+      });
     });
 });
 
