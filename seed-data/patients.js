@@ -1,23 +1,23 @@
 module.exports = [
   {
     id: 1,
-    patient_name: "Anelya",
-    patient_dob: "2021-01-15",
-    patient_allergy: "None",
+    patient_name: "Charlie",
+    patient_dob: "1977-01-15",
+    patient_allergy: "Penicillin",
     patient_md: "Dr. Alice",
   },
   {
     id: 2,
-    patient_name: "Lady Cat",
-    patient_dob: "2012-12-17",
+    patient_name: "Mary",
+    patient_dob: "1962-12-17",
     patient_allergy: "None",
-    patient_md: "Dr. Meow ",
+    patient_md: "Dr. Brown",
   },
   {
     id: 3,
-    patient_name: "Miesha",
-    patient_dob: "2020-08-26",
-    patient_allergy: "None",
-    patient_md: "Dr. Woof ",
+    patient_name: "David",
+    patient_dob: "1988-08-26",
+    patient_allergy: "Aspirin",
+    patient_md: "Dr. Lee",
   },
 ];

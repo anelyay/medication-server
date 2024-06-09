@@ -412,7 +412,6 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
 cron.schedule("0 0 * * *", async () => {
   try {
     await knex("schedule").update({ med_taken: false });
-    console.log("Reset med_taken status for all medications");
   } catch (error) {
     console.error("Error resetting med_taken status:", error);
   }
