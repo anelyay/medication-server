@@ -16,7 +16,7 @@ const formatDate = (dateString) => {
   return `${year}.${month}.${day}`;
 };
 
-//get all patients
+
 const findPatients = async (_req, res) => {
   try {
     const patients = await knex("patients").select(selectPatientFields());
@@ -27,7 +27,6 @@ const findPatients = async (_req, res) => {
   }
 };
 
-//get one patient
 const findPatient = async (req, res) => {
   try {
     const patientFound = await knex("patients")
@@ -52,7 +51,6 @@ const findPatient = async (req, res) => {
   }
 };
 
-//remove a patient
 const removePatient = async (req, res) => {
   try {
     const rowsDeleted = await knex("patients")
@@ -71,7 +69,6 @@ const removePatient = async (req, res) => {
   }
 };
 
-// add a patient
 
 const addPatient = async (req, res) => {
   const { patient_name, patient_dob, patient_allergy, patient_md } = req.body;
@@ -109,7 +106,6 @@ const addPatient = async (req, res) => {
   }
 };
 
-//update a patient
 const updatePatient = async (req, res) => {
   const { patient_name, patient_dob, patient_allergy, patient_md } = req.body;
 
@@ -141,7 +137,7 @@ const updatePatient = async (req, res) => {
     res.json(updatedPatient);
   } catch (error) {
     res.status(500).json({
-      message: `Unable to update warehouse with ID ${req.params.id}`,
+      message: `Unable to update a patient with ID ${req.params.id}`,
     });
   }
 };

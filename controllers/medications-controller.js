@@ -2,7 +2,6 @@ const knex = require("knex")(require("../knexfile"));
 const cron = require("node-cron");
 
 
-// log activity
 const logActivity = async (
   medicationId,
   med_taken,
@@ -25,7 +24,7 @@ const logActivity = async (
   }
 };
 
-// get log activity
+
 const getActivityLog = async (req, res) => {
   const { id } = req.params;
 
@@ -64,7 +63,7 @@ const getActivityLog = async (req, res) => {
   }
 };
 
-//find all
+
 const findMedications = async (_req, res) => {
   try {
     const medications = await knex("medications")
@@ -114,7 +113,6 @@ const findMedications = async (_req, res) => {
   }
 };
 
-//find one medication
 const findMedication = async (req, res) => {
   try {
     const medicationId = req.params.id;
@@ -164,7 +162,7 @@ const findMedication = async (req, res) => {
   }
 };
 
-//update medication
+
 const updateMedication = async (req, res) => {
   const medicationId = req.params.id;
   const { patient_id, med_name, med_dose, quantity, notes, schedule } =
@@ -241,7 +239,6 @@ const updateMedication = async (req, res) => {
   }
 };
 
-//add a medication
 const addMedication = async (req, res) => {
   const { patient_id, med_name, med_dose, schedule, quantity, notes } =
     req.body;
@@ -304,7 +301,7 @@ const addMedication = async (req, res) => {
   }
 };
 
-//remove a med
+
 const removeMedication = async (req, res) => {
   try {
     const medicationId = req.params.id;
@@ -327,7 +324,7 @@ const removeMedication = async (req, res) => {
   }
 };
 
-//mark as taken
+
 const markMedicationAsTaken = async (req, res) => {
   const { medication_id, med_time, med_taken } = req.body;
 
@@ -366,11 +363,10 @@ const markMedicationAsTaken = async (req, res) => {
   }
 };
 
+
 const markMedicationAsTakenWithNFC = async (req, res) => {
   const { id: medication_id, time: med_time, taken: med_taken } = req.query;
 
-  console.log("Received query parameters:", req.query);
-  console.log("Parsed parameters:", { medication_id, med_time, med_taken });
 
   try {
     const medication = await knex("medications")
@@ -408,7 +404,7 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
 };
 
 
-// reset all med_taken to false at midnight
+
 cron.schedule("0 0 * * *", async () => {
   try {
     await knex("schedule").update({ med_taken: false });
@@ -419,13 +415,13 @@ cron.schedule("0 0 * * *", async () => {
 
 
 module.exports = {
+  logActivity,
+  getActivityLog,
   findMedications,
   findMedication,
   updateMedication,
   addMedication,
   removeMedication,
-  logActivity,
   markMedicationAsTaken,
-  getActivityLog,
   markMedicationAsTakenWithNFC,
 };
