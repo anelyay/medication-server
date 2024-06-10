@@ -13,7 +13,7 @@ Follow this link to see the front-end project for Otter Pill and more details ab
 1.  git clone this repository and open in VScode or 
 
 ```
-git clone [https://github.com/AanelyaA/capstone-medication](https://github.com/AanelyaA/medication-server)
+git clone https://github.com/AanelyaA/medication-server
 cd medication-server
 ```
 
