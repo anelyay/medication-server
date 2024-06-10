@@ -41,7 +41,7 @@ npm i
     - make sure to change localhost ip address, and change DB_USER, DB_PASSWORD, DB_NAME accordingly
 
   
-3. In MySQL Workbench, create a new schema by running the following command:
+5. In MySQL Workbench, create a new schema by running the following command:
 
     ```
     CREATE SCHEMA nameofschema;
@@ -49,19 +49,19 @@ npm i
     - make sure you are using the same name of database as the one in env file
 
 
-4. After setting up the environment, proceed with database migration and seeding:
+6. After setting up the environment, proceed with database migration and seeding:
 
 ```
 npm run migrate
 npm run seed
 ```
 
-5. Start the application using:
+7. Start the application using:
 ```
 npm start
 ```
 
-6. Navigate to the frontend to ensure everything is running smoothly.
+8. Navigate to the frontend to ensure everything is running smoothly.
 
 
 ### Dependencies:
