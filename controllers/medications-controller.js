@@ -205,16 +205,6 @@ const updateMedication = async (req, res) => {
       notes,
     });
 
-    await knex("schedule").where({ medication_id: medicationId }).delete();
-
-    const scheduleEntries = schedule.map(({ med_time, med_taken }) => ({
-      medication_id: medicationId,
-      med_time,
-      med_taken: med_taken ? 1 : 0,
-    }));
-
-    await knex("schedule").insert(scheduleEntries);
-
     const updatedMedication = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
       .leftJoin("schedule", "medications.id", "schedule.medication_id")
@@ -226,7 +216,6 @@ const updateMedication = async (req, res) => {
         "quantity",
         "notes",
         "schedule.med_time",
-        "schedule.med_taken"
       )
       .where("medications.id", medicationId)
       .first();
