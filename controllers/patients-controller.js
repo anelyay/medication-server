@@ -161,7 +161,8 @@ const findMedicationsByPatient = async (req, res) => {
         "schedule.med_time",
         "schedule.med_taken",
         "quantity",
-        "notes"
+        "notes",
+        "medications.created_at"
       )
       .where("medications.patient_id", patientId);
 
