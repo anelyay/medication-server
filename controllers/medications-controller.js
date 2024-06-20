@@ -1,8 +1,8 @@
 const knex = require("knex")(require("../knexfile"));
 const cron = require("node-cron");
 
-
 const logActivity = async (
+  userId, ///
   medicationId,
   med_taken,
   med_time,
@@ -13,6 +13,7 @@ const logActivity = async (
     const formattedMedTime = `${currentDate} ${med_time}`;
 
     await knex("activity_log").insert({
+      user_id: userId, //////
       med_taken,
       med_time: formattedMedTime,
       medication_id: medicationId,
@@ -24,9 +25,9 @@ const logActivity = async (
   }
 };
 
-
 const getActivityLog = async (req, res) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   try {
     const logs = await knex("activity_log")
@@ -37,7 +38,10 @@ const getActivityLog = async (req, res) => {
         "activity_log.quantity",
         "activity_log.log_time"
       )
-      .where("activity_log.medication_id", id);
+      .where({
+        "activity_log.medication_id": id,
+        "activity_log.user_id": userId,
+      });
 
     const formattedLogs = logs.map((log) => {
       const date = new Date(log.log_time);
@@ -63,8 +67,9 @@ const getActivityLog = async (req, res) => {
   }
 };
 
+const findMedications = async (req, res) => {
+  const userId = req.user.id;
 
-const findMedications = async (_req, res) => {
   try {
     const medications = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
@@ -78,7 +83,8 @@ const findMedications = async (_req, res) => {
         "schedule.med_taken",
         "medications.quantity",
         "medications.notes"
-      );
+      )
+      .where("patients.user_id", userId);
 
     const formattedMedications = medications.reduce((acc, row) => {
       const existingMedication = acc.find(
@@ -116,6 +122,7 @@ const findMedications = async (_req, res) => {
 const findMedication = async (req, res) => {
   try {
     const medicationId = req.params.id;
+    const userId = req.user.id;
 
     const rows = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
@@ -130,7 +137,8 @@ const findMedication = async (req, res) => {
         "medications.quantity",
         "medications.notes"
       )
-      .where("medications.id", medicationId);
+      .where("medications.id", medicationId)
+      .andWhere("patients.user_id", userId);
 
     if (rows.length === 0) {
       return res.status(404).json({
@@ -145,7 +153,8 @@ const findMedication = async (req, res) => {
         acc.med_name = row.med_name;
         acc.med_dose = row.med_dose;
         acc.quantity = row.quantity;
-        (acc.notes = row.notes), (acc.schedule = []);
+        acc.notes = row.notes;
+        acc.schedule = [];
       }
       acc.schedule.push({
         med_time: row.med_time,
@@ -166,6 +175,7 @@ const updateMedication = async (req, res) => {
   const medicationId = req.params.id;
   const { patient_id, med_name, med_dose, quantity, notes, schedule } =
     req.body;
+  const userId = req.user.id;
 
   const errors = [];
 
@@ -186,8 +196,14 @@ const updateMedication = async (req, res) => {
   }
 
   try {
+    // const medication = await knex("medications")
+    //   .where({ id: medicationId })
+    //   .first();
+
     const medication = await knex("medications")
-      .where({ id: medicationId })
+      .join("patients", "medications.patient_id", "patients.id")
+      .where("medications.id", medicationId)
+      .andWhere("patients.user_id", userId)
       .first();
 
     if (!medication) {
@@ -196,7 +212,7 @@ const updateMedication = async (req, res) => {
       });
     }
 
-    const { patient_id: medicationPatientId } = medication;
+    // const { patient_id: medicationPatientId } = medication;
 
     await knex("medications").where({ id: medicationId }).update({
       patient_id,
@@ -241,6 +257,7 @@ const updateMedication = async (req, res) => {
         "schedule.med_time"
       )
       .where("medications.id", medicationId)
+      .andWhere("patients.user_id", userId)
       .first();
 
     res.status(200).json(updatedMedication);
@@ -252,8 +269,8 @@ const updateMedication = async (req, res) => {
   }
 };
 
-
 const addMedication = async (req, res) => {
+  const userId = req.user.id;
   const { patient_id, med_name, med_dose, schedule, quantity, notes } =
     req.body;
 
@@ -282,6 +299,7 @@ const addMedication = async (req, res) => {
       med_dose,
       quantity,
       notes,
+      user_id: userId,
     });
 
     const newMedicationId = result[0];
@@ -305,6 +323,7 @@ const addMedication = async (req, res) => {
         "notes"
       )
       .where("medications.id", newMedicationId)
+      .andWhere("patients.user_id", userId)
       .first();
 
     res.status(201).json(newMedication);
@@ -315,13 +334,15 @@ const addMedication = async (req, res) => {
   }
 };
 
-
 const removeMedication = async (req, res) => {
-  try {
-    const medicationId = req.params.id;
+  const medicationId = req.params.id;
+  const userId = req.user.id;
 
+  try {
     const rowsDeleted = await knex("medications")
-      .where({ id: medicationId })
+      .join("patients", "medications.patient_id", "patients.id") /////
+      .where("medications.id", medicationId)
+      .andWhere("patients.user_id", userId) // Ensure user owns this medication
       .delete();
 
     if (rowsDeleted === 0) {
@@ -338,13 +359,13 @@ const removeMedication = async (req, res) => {
   }
 };
 
-
 const markMedicationAsTaken = async (req, res) => {
+  const userId = req.user.id;
   const { medication_id, med_time, med_taken } = req.body;
 
   try {
     const medication = await knex("medications")
-      .where({ id: medication_id })
+      .where({ id: medication_id, user_id: userId })
       .first();
 
     if (!medication) {
@@ -366,7 +387,13 @@ const markMedicationAsTaken = async (req, res) => {
       .where({ id: medication_id })
       .update({ quantity: newQuantity });
 
-    await logActivity(medication_id, med_taken ? 1 : 0, med_time, newQuantity);
+    await logActivity(
+      userId,
+      medication_id,
+      med_taken ? 1 : 0,
+      med_time,
+      newQuantity
+    );
 
     res
       .status(200)
@@ -377,14 +404,13 @@ const markMedicationAsTaken = async (req, res) => {
   }
 };
 
-
 const markMedicationAsTakenWithNFC = async (req, res) => {
-  const { id: medication_id, time: med_time, taken: med_taken } = req.query;
-
+  const userId = req.user.id;
+  const { id: medication_id, time: med_time, taken: med_taken, } = req.query;
 
   try {
     const medication = await knex("medications")
-      .where({ id: medication_id })
+      .where({ id: medication_id, user_id: userId })
       .first();
 
     if (!medication) {
@@ -406,7 +432,13 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
       .where({ id: medication_id })
       .update({ quantity: newQuantity });
 
-    await logActivity(medication_id, med_taken ? 1 : 0, med_time, newQuantity);
+    await logActivity(
+      userId,
+      medication_id,
+      med_taken ? 1 : 0,
+      med_time,
+      newQuantity
+    );
 
     res
       .status(200)
@@ -416,8 +448,6 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
     res.status(500).json({ error: "Unable to update medication taken status" });
   }
 };
-
-
 
 cron.schedule("0 0 * * *", async () => {
   try {
@@ -426,7 +456,6 @@ cron.schedule("0 0 * * *", async () => {
     console.error("Error resetting med_taken status:", error);
   }
 });
-
 
 module.exports = {
   logActivity,
