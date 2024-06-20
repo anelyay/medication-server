@@ -6,4 +6,7 @@ router.route("/register").post(authController.register);
 
 router.route("/login").post(authController.login);
 
+router.route("/users").get(authController.fetchUser);
+
+
 module.exports = router;

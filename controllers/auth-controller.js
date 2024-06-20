@@ -65,7 +65,28 @@ const login = async (req, res) => {
   res.send({ token });
 };
 
+const fetchUser = async (req, res) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const decodedToken = jwt.verify(token, process.env.JWT_KEY);
+
+    const user = await knex("users")
+      .select("id", "username", "email")
+      .where({ id: decodedToken.id })
+      .first();
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) { console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Failed to fetch user" });
+  }
+};
+
 module.exports = {
   register,
   login,
+  fetchUser,
 };
