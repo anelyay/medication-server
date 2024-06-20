@@ -6,6 +6,7 @@ const selectPatientFields = () => [
   knex.raw("DATE_FORMAT(patient_dob, '%Y-%m-%d') AS patient_dob"),
   "patient_allergy",
   "patient_md",
+  "user_id",
 ];
 
 const formatDate = (dateString) => {
@@ -17,9 +18,11 @@ const formatDate = (dateString) => {
 };
 
 
-const findPatients = async (_req, res) => {
+const findPatients = async (req, res) => {
   try {
-    const patients = await knex("patients").select(selectPatientFields());
+    const patients = await knex("patients")
+      .select(selectPatientFields())
+      .where({ user_id: req.user.id });
 
     res.status(200).json(patients);
   } catch (error) {
@@ -33,6 +36,7 @@ const findPatient = async (req, res) => {
       .select(selectPatientFields())
       .where({
         id: req.params.id,
+        user_id: req.user.id,
       });
 
     if (patientFound.length === 0) {
@@ -54,7 +58,10 @@ const findPatient = async (req, res) => {
 const removePatient = async (req, res) => {
   try {
     const rowsDeleted = await knex("patients")
-      .where({ id: req.params.id })
+      .where({
+        id: req.params.id,
+        user_id: req.user.id,
+      })
       .delete();
 
     if (rowsDeleted === 0) {
@@ -72,6 +79,8 @@ const removePatient = async (req, res) => {
 
 const addPatient = async (req, res) => {
   const { patient_name, patient_dob, patient_allergy, patient_md } = req.body;
+
+  const user_id = req.user.id;
 
   const errors = [];
 
@@ -91,6 +100,7 @@ const addPatient = async (req, res) => {
       patient_dob: formattedPatientDob,
       patient_allergy,
       patient_md,
+      user_id
     });
 
     const newPatientId = result[0];
@@ -120,7 +130,10 @@ const updatePatient = async (req, res) => {
 
   try {
     const rowsUpdated = await knex("patients")
-      .where({ id: req.params.id })
+      .where({
+        id: req.params.id,
+        user_id: req.user.id,
+      })
       .update({ patient_name, patient_dob, patient_allergy, patient_md });
 
     if (rowsUpdated === 0) {
@@ -145,6 +158,19 @@ const updatePatient = async (req, res) => {
 const findMedicationsByPatient = async (req, res) => {
   try {
     const patientId = req.params.id;
+
+    const patient = await knex("patients")
+      .where({
+        id: patientId,
+        user_id: req.user.id,
+      })
+      .first();
+
+    if (!patient) {
+      return res.status(404).json({
+        message: `Patient with ID ${patientId} not found`,
+      });
+    }
 
     const medications = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
@@ -180,7 +206,7 @@ const findMedicationsByPatient = async (req, res) => {
     res.status(200).json(formattedMedications);
   } catch (error) {
     res.status(500).json({
-      message: `Unable to retrieve medications for patient with ID ${patientId}: ${error.message}`,
+      message: `Unable to retrieve medications for patient with ID ${req.params.id}: ${error.message}`,
     });
   }
 };
