@@ -162,7 +162,6 @@ const findMedication = async (req, res) => {
   }
 };
 
-
 const updateMedication = async (req, res) => {
   const medicationId = req.params.id;
   const { patient_id, med_name, med_dose, quantity, notes, schedule } =
@@ -178,6 +177,9 @@ const updateMedication = async (req, res) => {
   } else if (isNaN(quantity)) {
     errors.push({ msg: "Quantity must be a number" });
   }
+  if (!Array.isArray(schedule) || schedule.some((entry) => !entry.med_time)) {
+    errors.push({ msg: "Invalid schedule format" });
+  }
 
   if (errors.length > 0) {
     return res.status(400).json({ errors });
@@ -186,7 +188,6 @@ const updateMedication = async (req, res) => {
   try {
     const medication = await knex("medications")
       .where({ id: medicationId })
-      .select("patient_id")
       .first();
 
     if (!medication) {
@@ -205,28 +206,52 @@ const updateMedication = async (req, res) => {
       notes,
     });
 
+    const currentSchedule = await knex("schedule")
+      .where({ medication_id: medicationId })
+      .select("id", "med_time");
+
+    const currentScheduleMap = currentSchedule.reduce((acc, entry) => {
+      acc[entry.med_time] = entry;
+      return acc;
+    }, {});
+
+    const scheduleEntries = schedule.map((entry) => {
+      const currentEntry = currentScheduleMap[entry.med_time];
+      return {
+        medication_id: medicationId,
+        med_time: entry.med_time,
+      };
+    });
+
+    await knex.transaction(async (trx) => {
+      await trx("schedule").where({ medication_id: medicationId }).del();
+      await trx("schedule").insert(scheduleEntries);
+    });
+
     const updatedMedication = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
       .leftJoin("schedule", "medications.id", "schedule.medication_id")
       .select(
         "medications.id as id",
         "patients.patient_name",
-        "med_name",
-        "med_dose",
-        "quantity",
-        "notes",
-        "schedule.med_time",
+        "medications.med_name",
+        "medications.med_dose",
+        "medications.quantity",
+        "medications.notes",
+        "schedule.med_time"
       )
       .where("medications.id", medicationId)
       .first();
 
     res.status(200).json(updatedMedication);
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       message: `Failed to update medication: ${error.message}`,
     });
   }
 };
+
 
 const addMedication = async (req, res) => {
   const { patient_id, med_name, med_dose, schedule, quantity, notes } =
