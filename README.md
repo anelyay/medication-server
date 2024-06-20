@@ -1,6 +1,4 @@
-# Project Title
-
-Otter Pill Server  :otter: :pill: 💻
+# Otter Pill Server  :otter: :pill: 💻
 
 ## Overview
 
@@ -10,7 +8,7 @@ Follow this link to see the front-end project for Otter Pill and more details ab
 
 ### Installation
 
-1.  git clone this repository and open in VScode or 
+1.  git clone this repository and open in VScode or
 
 ```
 git clone https://github.com/AanelyaA/medication-server
@@ -40,7 +38,7 @@ npm i
     ```
     - make sure to change localhost ip address, and change DB_USER, DB_PASSWORD, DB_NAME accordingly
 
-  
+
 5. In MySQL Workbench, create a new schema by running the following command:
 
     ```
@@ -89,7 +87,7 @@ npm start
     - Replace yourIPAddress with the IP address of your server and IDMED with the medication ID obtained from the medication detail page by pressing the otter image. MEDTIME should be the time you wish to set for the medication (e.g., 14:30).
     - Once configured, tap the phone on the NFC tag and press the link when prompted.
     - The medication status should update to "TAKEN" accordingly.
-      
+
 
 ### Next Steps and Lessons Learned
 
@@ -97,5 +95,3 @@ npm start
 - Next steps are to dive deeper and implement user authentication and authorization to ensure secure access to the application.
 - Enhance the user interface with additional features and functionalities based on user feedback.
 - Explore integrating additional APIs or services to enhance the application's capabilities.
-
-
