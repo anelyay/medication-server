@@ -196,10 +196,6 @@ const updateMedication = async (req, res) => {
   }
 
   try {
-    // const medication = await knex("medications")
-    //   .where({ id: medicationId })
-    //   .first();
-
     const medication = await knex("medications")
       .join("patients", "medications.patient_id", "patients.id")
       .where("medications.id", medicationId)
@@ -211,8 +207,6 @@ const updateMedication = async (req, res) => {
         message: `Medication with ID ${medicationId} not found`,
       });
     }
-
-    // const { patient_id: medicationPatientId } = medication;
 
     await knex("medications").where({ id: medicationId }).update({
       patient_id,

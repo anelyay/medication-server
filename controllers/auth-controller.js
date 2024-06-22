@@ -41,21 +41,18 @@ const login = async (req, res) => {
     return res.status(400).send("Please enter the required fields");
   }
 
-  //Find user
   const user = await knex("users").where({ email: email }).first();
 
   if (!user) {
     return res.status(400).send("Invalid email");
   }
 
-  //Validate password
   const passwordMatch = await bcrypt.compare(password, user.password);
 
   if (!passwordMatch) {
     return res.status(400).send("Invalid email or password");
   }
 
-  // Generate a token
   const token = jwt.sign(
     { id: user.id, email: user.email },
     process.env.JWT_KEY,
@@ -85,8 +82,57 @@ const fetchUser = async (req, res) => {
   }
 };
 
+const updateUser = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token missing" });
+    }
+
+    const decodedToken = jwt.verify(token, process.env.JWT_KEY);
+    const userId = decodedToken.id;
+
+    const { username, email, password } = req.body;
+
+    if (!username && !email && !password) {
+      return res
+        .status(400)
+        .send("Please provide at least one field to update");
+    }
+
+    const updates = {};
+
+    if (username) {
+      updates.username = username;
+    }
+
+    if (email) {
+      const emailExists = await knex("users").where({ email }).first();
+      if (emailExists && emailExists.id !== userId) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+      updates.email = email;
+    }
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.password = hashedPassword;
+    }
+
+    await knex("users").where({ id: userId }).update(updates);
+    res.status(200).send("User updated successfully!");
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Failed to update user" });
+  }
+};
+
+
+
 module.exports = {
   register,
   login,
   fetchUser,
+  updateUser,
 };
