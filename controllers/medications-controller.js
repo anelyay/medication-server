@@ -1,19 +1,23 @@
+///
 const knex = require("knex")(require("../knexfile"));
 const cron = require("node-cron");
+const moment = require("moment-timezone");
 
 const logActivity = async (
-  userId, ///
+  userId,
   medicationId,
   med_taken,
   med_time,
   updatedQuantity
 ) => {
   try {
-    const currentDate = new Date().toISOString().slice(0, 10);
-    const formattedMedTime = `${currentDate} ${med_time}`;
+    const formattedMedTime = moment
+      .tz(med_time, "YYYY-MM-DD HH:mm", "UTC")
+      .tz(moment.tz.guess()) // Use the user's current timezone
+      .format("YYYY-MM-DD HH:mm");
 
     await knex("activity_log").insert({
-      user_id: userId, //////
+      user_id: userId,
       med_taken,
       med_time: formattedMedTime,
       medication_id: medicationId,
@@ -43,21 +47,12 @@ const getActivityLog = async (req, res) => {
         "activity_log.user_id": userId,
       });
 
-    const formattedLogs = logs.map((log) => {
-      const date = new Date(log.log_time);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
-
-      const formattedLogTime = `${year}-${month}-${day} ${hours}:${minutes}`;
-
-      return {
-        ...log,
-        log_time: formattedLogTime,
-      };
-    });
+    const formattedLogs = logs.map((log) => ({
+      ...log,
+      log_time: moment(log.log_time)
+        .tz(moment.tz.guess())
+        .format("YYYY-MM-DD HH:mm"),
+    }));
 
     res.status(200).json(formattedLogs);
   } catch (error) {
@@ -400,7 +395,7 @@ const markMedicationAsTaken = async (req, res) => {
 
 const markMedicationAsTakenWithNFC = async (req, res) => {
   const userId = req.user.id;
-  const { id: medication_id, time: med_time, taken: med_taken, } = req.query;
+  const { id: medication_id, time: med_time, taken: med_taken } = req.query;
 
   try {
     const medication = await knex("medications")
