@@ -443,7 +443,7 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
   }
 };
 
-cron.schedule("0 0 * * *", async () => {
+cron.schedule("0 4 * * *", async () => {
   try {
     await knex("schedule").update({ med_taken: false });
   } catch (error) {
