@@ -33,7 +33,7 @@ function authenticateToken(req, res, next) {
 app.use("/patients", authenticateToken, patientsRouter);
 app.use("/medications", authenticateToken, medicationsRouter);
 
-app.use("/auth",authenticateToken, authRoutes);
+app.use("/auth", authRoutes);
 
 
 app.listen(PORT, () => {
