@@ -13,7 +13,7 @@ const logActivity = async (
   try {
     const formattedMedTime = moment
       .tz(med_time, "YYYY-MM-DD HH:mm", "UTC")
-      .tz(moment.tz.guess()) // Use the user's current timezone
+      .tz(moment.tz.guess())
       .format("YYYY-MM-DD HH:mm");
 
     await knex("activity_log").insert({
