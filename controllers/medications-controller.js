@@ -22,7 +22,7 @@ const logActivity = async (
 
     const formattedMedTime = moment
       .tz(med_time, "YYYY-MM-DD HH:mm", "UTC")
-      .tz(timezone.timezone)
+      .tz(user.timezone)
       .format("YYYY-MM-DD HH:mm");
 
     await knex("activity_log").insert({
