@@ -3,9 +3,9 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 const register = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, timezone } = req.body;
 
-  if (!username || !email || !password) {
+  if (!username || !email || !password || !timezone ) {
     return res.status(400).send("Please enter the required fields");
   }
 
@@ -23,6 +23,7 @@ const register = async (req, res) => {
     username,
     email,
     password: hashedPassword,
+    timezone
   };
 
   try {
@@ -68,7 +69,7 @@ const fetchUser = async (req, res) => {
     const decodedToken = jwt.verify(token, process.env.JWT_KEY);
 
     const user = await knex("users")
-      .select("id", "username", "email")
+      .select("id", "username", "email", "timezone")
       .where({ id: decodedToken.id })
       .first();
 
@@ -93,7 +94,7 @@ const updateUser = async (req, res) => {
     const decodedToken = jwt.verify(token, process.env.JWT_KEY);
     const userId = decodedToken.id;
 
-    const { username, email, password } = req.body;
+    const { username, email, password, timezone } = req.body;
 
     if (!username && !email && !password) {
       return res
@@ -118,6 +119,10 @@ const updateUser = async (req, res) => {
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
       updates.password = hashedPassword;
+    }
+
+    if (timezone) {
+      updates.timezone = timezone;
     }
 
     await knex("users").where({ id: userId }).update(updates);
