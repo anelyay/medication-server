@@ -8,10 +8,18 @@ const logActivity = async (
   medicationId,
   med_taken,
   med_time,
-  updatedQuantity,
-  timezone
+  updatedQuantity
 ) => {
   try {
+    const timezone = await knex("users")
+      .select("timezone")
+      .where("id", userId)
+      .first();
+
+    if (!timezone) {
+      return res.status(404).json({ error: "User timezone not found" });
+    }
+
     const formattedMedTime = moment
       .tz(med_time, "YYYY-MM-DD HH:mm", "UTC")
       .tz(timezone)
@@ -363,15 +371,6 @@ const markMedicationAsTaken = async (req, res) => {
   const { medication_id, med_time, med_taken } = req.body;
 
   try {
-    const timezone = await knex("users")
-      .select("timezone")
-      .where("id", userId)
-      .first();
-
-    if (!timezone) {
-      return res.status(404).json({ error: "User timezone not found" });
-    }
-
     const medication = await knex("medications")
       .where({ id: medication_id, user_id: userId })
       .first();
@@ -400,8 +399,7 @@ const markMedicationAsTaken = async (req, res) => {
       medication_id,
       med_taken ? 1 : 0,
       med_time,
-      newQuantity,
-      timezone
+      newQuantity
     );
 
     res
