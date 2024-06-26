@@ -394,13 +394,13 @@ const markMedicationAsTaken = async (req, res) => {
       .where({ id: medication_id })
       .update({ quantity: newQuantity });
 
-    await logActivity(
-      userId,
-      medication_id,
-      med_taken ? 1 : 0,
-      med_time,
-      newQuantity
-    );
+    // await logActivity(
+    //   userId,
+    //   medication_id,
+    //   med_taken ? 1 : 0,
+    //   med_time,
+    //   newQuantity
+    // );
 
     res
       .status(200)
