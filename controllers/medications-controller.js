@@ -35,6 +35,17 @@ const getActivityLog = async (req, res) => {
   const userId = req.user.id;
 
   try {
+    const user = await knex("users")
+      .select("timezone")
+      .where("id", userId)
+      .first();
+
+    if (!user || !user.timezone) {
+      return res.status(400).json({ error: "User timezone not found" });
+    }
+
+    const timezone = user.timezone;
+
     const logs = await knex("activity_log")
       .join("medications", "activity_log.medication_id", "medications.id")
       .select(
