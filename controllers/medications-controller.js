@@ -468,6 +468,24 @@ const getNextMidnight = (timezone) => {
   return moment.tz(timezone).endOf("day").add(1, "second").toDate();
 };
 
+const resetMedTaken = async (userId) => {
+  try {
+    await knex("schedule")
+      .update({ med_taken: false })
+      .where({ user_id: userId });
+    console.log(
+      `Reset med_taken for user ${userId} at ${moment().format(
+        "YYYY-MM-DD HH:mm:ss"
+      )}`
+    );
+  } catch (error) {
+    console.error(
+      `Error resetting med_taken status for user ${userId}:`,
+      error
+    );
+  }
+};
+
 const scheduleMidnightReset = async () => {
   try {
     const users = await knex("users").select("id", "timezone");
@@ -475,33 +493,14 @@ const scheduleMidnightReset = async () => {
     users.forEach((user) => {
       const nextMidnight = getNextMidnight(user.timezone);
 
+      // Schedule the job using cron.schedule correctly
       cron.schedule(nextMidnight, async () => {
-        try {
-          await knex("schedule")
-            .update({ med_taken: false })
-            .where({ user_id: user.id });
-          console.log(
-            `Reset med_taken for user ${user.id} at ${moment().format(
-              "YYYY-MM-DD HH:mm:ss"
-            )}`
-          );
-
-          // Reschedule the job for the next midnight
-          const newNextMidnight = getNextMidnight(user.timezone);
-          cron.schedule(newNextMidnight, async () => {
-            await knex("schedule")
-              .update({ med_taken: false })
-              .where({ user_id: user.id });
-            console.log(
-              `Reset med_taken for user ${user.id} at ${moment().format(
-                "YYYY-MM-DD HH:mm:ss"
-              )}`
-            );
-          });
-        } catch (error) {
-          console.error("Error resetting med_taken status:", error);
-        }
+        await resetMedTaken(user.id);
       });
+
+      console.log(
+        `Midnight reset scheduled for user ${user.id} in ${user.timezone}`
+      );
     });
 
     console.log("Midnight reset scheduled for all users.");
@@ -511,6 +510,7 @@ const scheduleMidnightReset = async () => {
 };
 
 scheduleMidnightReset();
+
 
 
 module.exports = {
