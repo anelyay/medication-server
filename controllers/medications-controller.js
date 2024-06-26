@@ -8,12 +8,13 @@ const logActivity = async (
   medicationId,
   med_taken,
   med_time,
-  updatedQuantity
+  updatedQuantity,
+  timezone
 ) => {
   try {
     const formattedMedTime = moment
       .tz(med_time, "YYYY-MM-DD HH:mm", "UTC")
-      .tz(moment.tz.guess())
+      .tz(timezone)
       .format("YYYY-MM-DD HH:mm");
 
     await knex("activity_log").insert({
@@ -49,9 +50,7 @@ const getActivityLog = async (req, res) => {
 
     const formattedLogs = logs.map((log) => ({
       ...log,
-      log_time: moment(log.log_time)
-        .tz(moment.tz.guess())
-        .format("YYYY-MM-DD HH:mm"),
+      log_time: moment(log.log_time).tz(timezone).format("YYYY-MM-DD HH:mm"),
     }));
 
     res.status(200).json(formattedLogs);
@@ -353,6 +352,15 @@ const markMedicationAsTaken = async (req, res) => {
   const { medication_id, med_time, med_taken } = req.body;
 
   try {
+    const timezone = await knex("users")
+      .select("timezone")
+      .where("id", userId)
+      .first();
+
+    if (!timezone) {
+      return res.status(404).json({ error: "User timezone not found" });
+    }
+
     const medication = await knex("medications")
       .where({ id: medication_id, user_id: userId })
       .first();
@@ -381,7 +389,8 @@ const markMedicationAsTaken = async (req, res) => {
       medication_id,
       med_taken ? 1 : 0,
       med_time,
-      newQuantity
+      newQuantity,
+      timezone
     );
 
     res
@@ -438,14 +447,54 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
   }
 };
 
+// cron.schedule("00 04 * * *", async () => {
+//   try {
+//     await knex("schedule").update({ med_taken: false });
+//   } catch (error) {
+//     console.error("Error resetting med_taken status:", error);
+//   }
+// });
 
-cron.schedule("00 04 * * *", async () => {
+const getNextMidnight = (timezone) => {
+  return moment
+    .tz(timezone)
+    .endOf("day")
+    .add(1, "second")
+    .format("YYYY-MM-DD HH:mm:ss");
+};
+
+// Schedule cron job to run at next midnight in each user's timezone
+const scheduleMidnightRestart = async () => {
   try {
-    await knex("schedule").update({ med_taken: false });
+    const users = await knex("users").select("id", "timezone");
+
+    for (const user of users) {
+      const nextMidnight = getNextMidnight(user.timezone);
+
+      cron.schedule(nextMidnight, async () => {
+        try {
+          // Perform your reset logic here for this user
+          await knex("schedule")
+            .update({ med_taken: false })
+            .where({ user_id: user.id });
+          console.log(
+            `Reset med_taken for user ${user.id} at ${moment().format(
+              "YYYY-MM-DD HH:mm:ss"
+            )}`
+          );
+        } catch (error) {
+          console.error("Error resetting med_taken status:", error);
+        }
+      });
+    }
+
+    console.log("Midnight reset scheduled for all users.");
   } catch (error) {
-    console.error("Error resetting med_taken status:", error);
+    console.error("Error scheduling midnight reset:", error);
   }
-});
+};
+
+scheduleMidnightRestart();
 
 module.exports = {
   logActivity,
