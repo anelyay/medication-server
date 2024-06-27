@@ -457,13 +457,13 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
   }
 };
 
-// cron.schedule("00 04 * * *", async () => {
-//   try {
-//     await knex("schedule").update({ med_taken: false });
-//   } catch (error) {
-//     console.error("Error resetting med_taken status:", error);
-//   }
-// });
+cron.schedule("22 20 * * *", async () => {
+  try {
+    await knex("schedule").update({ med_taken: false });
+  } catch (error) {
+    console.error("Error resetting med_taken status:", error);
+  }
+});
 
 const getNextMidnightDate = (timezone) => {
   const nextMidnight = moment.tz(timezone).endOf("day").add(1, "second");
