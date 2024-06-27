@@ -463,9 +463,12 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
 //     console.error("Error resetting med_taken status:", error);
 //   }
 // });
-
-const getNextMidnight = (timezone) => {
-  return moment.tz(timezone).endOf("day").add(1, "second").toDate();
+const getNextMidnightCronExpression = (timezone) => {
+  const nextMidnight = moment.tz(timezone).endOf("day").add(1, "second");
+  const second = nextMidnight.second();
+  const minute = nextMidnight.minute();
+  const hour = nextMidnight.hour();
+  return `${second} ${minute} ${hour} * * *`;
 };
 
 const resetMedTaken = async (userId) => {
@@ -491,10 +494,10 @@ const scheduleMidnightReset = async () => {
     const users = await knex("users").select("id", "timezone");
 
     users.forEach((user) => {
-      const nextMidnight = getNextMidnight(user.timezone);
+      const cronExpression = getNextMidnightCronExpression(user.timezone);
 
       // Schedule the job using cron.schedule correctly
-      cron.schedule(nextMidnight, async () => {
+      cron.schedule(cronExpression, async () => {
         await resetMedTaken(user.id);
       });
 
