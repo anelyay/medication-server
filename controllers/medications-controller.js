@@ -1,6 +1,7 @@
 ///
 const knex = require("knex")(require("../knexfile"));
 const cron = require("node-cron");
+const schedule = require("node-schedule");
 const moment = require("moment-timezone");
 
 const logActivity = async (
@@ -463,12 +464,10 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
 //     console.error("Error resetting med_taken status:", error);
 //   }
 // });
-const getNextMidnightCronExpression = (timezone) => {
+
+const getNextMidnightDate = (timezone) => {
   const nextMidnight = moment.tz(timezone).endOf("day").add(1, "second");
-  const second = nextMidnight.second();
-  const minute = nextMidnight.minute();
-  const hour = nextMidnight.hour();
-  return `${second} ${minute} ${hour} * * *`;
+  return nextMidnight.toDate(); // Convert to JavaScript Date object
 };
 
 const resetMedTaken = async (userId) => {
@@ -488,22 +487,20 @@ const resetMedTaken = async (userId) => {
     );
   }
 };
+
 const scheduleMidnightReset = async () => {
   try {
     const users = await knex("users").select("id", "timezone");
 
     users.forEach((user) => {
-      const cronExpression = getNextMidnightCronExpression(user.timezone);
-
-      new cron.CronJob(
-        cronExpression,
-        async () => {
-          await resetMedTaken(user.id);
-        },
-        null,
-        true,
-        user.timezone
+      const nextMidnightDate = getNextMidnightDate(user.timezone);
+      console.log(
+        `Scheduling reset for user ${user.id} at ${nextMidnightDate} (${user.timezone})`
       );
+
+      schedule.scheduleJob(nextMidnightDate, async () => {
+        await resetMedTaken(user.id);
+      });
 
       console.log(
         `Midnight reset scheduled for user ${user.id} in ${user.timezone}`
