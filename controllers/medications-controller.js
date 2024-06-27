@@ -496,9 +496,16 @@ const scheduleMidnightReset = async () => {
     users.forEach((user) => {
       const cronExpression = getNextMidnightCronExpression(user.timezone);
 
-      cron.schedule(cronExpression, async () => {
-        await resetMedTaken(user.id);
-      });
+      cron.schedule(
+        cronExpression,
+        async () => {
+          await resetMedTaken(user.id);
+        },
+        {
+          scheduled: true,
+          timezone: user.timezone,
+        }
+      );
 
       console.log(
         `Midnight reset scheduled for user ${user.id} in ${user.timezone}`
