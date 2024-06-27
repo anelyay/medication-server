@@ -488,7 +488,6 @@ const resetMedTaken = async (userId) => {
     );
   }
 };
-
 const scheduleMidnightReset = async () => {
   try {
     const users = await knex("users").select("id", "timezone");
@@ -496,15 +495,14 @@ const scheduleMidnightReset = async () => {
     users.forEach((user) => {
       const cronExpression = getNextMidnightCronExpression(user.timezone);
 
-      cron.schedule(
+      new cron.CronJob(
         cronExpression,
         async () => {
           await resetMedTaken(user.id);
         },
-        {
-          scheduled: true,
-          timezone: user.timezone,
-        }
+        null,
+        true,
+        user.timezone
       );
 
       console.log(
@@ -519,7 +517,6 @@ const scheduleMidnightReset = async () => {
 };
 
 scheduleMidnightReset();
-
 
 
 module.exports = {
