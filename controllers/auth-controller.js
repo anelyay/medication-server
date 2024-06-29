@@ -3,11 +3,10 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const moment = require("moment-timezone");
 
-
 const register = async (req, res) => {
   const { username, email, password, timezone } = req.body;
 
-  if (!username || !email || !password || !timezone ) {
+  if (!username || !email || !password || !timezone) {
     return res.status(400).send("Please enter the required fields");
   }
 
@@ -25,7 +24,7 @@ const register = async (req, res) => {
     username,
     email,
     password: hashedPassword,
-    timezone
+    timezone,
   };
 
   try {
@@ -44,10 +43,7 @@ const login = async (req, res) => {
     return res.status(400).send("Please enter the required fields");
   }
 
-const user = await knex("users")
-  .select("id", "email", "password", "timezone")
-  .where({ email: email })
-  .first();
+  const user = await knex("users").where({ email: email }).first();
 
   if (!user) {
     return res.status(400).send("Invalid email");
@@ -60,11 +56,36 @@ const user = await knex("users")
   }
 
   const timezone = user.timezone;
-  const currentDateTime = moment().tz(timezone).format("YYYY-MM-DD HH:mm:ss");
+  const currentDateTime = moment().tz(timezone);
+  const currentDate = currentDateTime.format("YYYY-MM-DD");
 
-  await knex("users").where({ id: user.id }).update({
-    last_login: currentDateTime,
-  });
+  const lastLoginDate = user.last_login
+    ? moment.tz(user.last_login, timezone).format("YYYY-MM-DD")
+    : null;
+
+  if (!lastLoginDate || currentDate !== lastLoginDate) {
+    // Reset med_taken status
+    await knex("schedule")
+      .update({ med_taken: false })
+      .where({ user_id: user.id });
+
+    // Update last_login date
+    await knex("users")
+      .update({ last_login: currentDateTime.format("YYYY-MM-DD HH:mm:ss") })
+      .where({ id: user.id });
+
+    // console.log(
+    //   `Reset med_taken for user ${user.id} at ${currentDateTime.format(
+    //     "YYYY-MM-DD HH:mm:ss"
+    //   )}`
+    // );
+  } else {
+    // Update last_login time
+    await knex("users")
+      .update({ last_login: currentDateTime.format("YYYY-MM-DD HH:mm:ss") })
+      .where({ id: user.id });
+  }
+
 
   const token = jwt.sign(
     { id: user.id, email: user.email },
@@ -90,7 +111,8 @@ const fetchUser = async (req, res) => {
     }
 
     res.status(200).json(user);
-  } catch (error) { console.error("Error fetching user:", error);
+  } catch (error) {
+    console.error("Error fetching user:", error);
     res.status(500).json({ message: "Failed to fetch user" });
   }
 };
@@ -144,8 +166,6 @@ const updateUser = async (req, res) => {
     res.status(500).json({ message: "Failed to update user" });
   }
 };
-
-
 
 module.exports = {
   register,
