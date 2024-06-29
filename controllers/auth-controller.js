@@ -1,6 +1,8 @@
 const knex = require("knex")(require("../knexfile"));
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const moment = require("moment-timezone");
+
 
 const register = async (req, res) => {
   const { username, email, password, timezone } = req.body;
@@ -42,7 +44,10 @@ const login = async (req, res) => {
     return res.status(400).send("Please enter the required fields");
   }
 
-  const user = await knex("users").where({ email: email }).first();
+const user = await knex("users")
+  .select("id", "email", "password", "timezone")
+  .where({ email: email })
+  .first();
 
   if (!user) {
     return res.status(400).send("Invalid email");
