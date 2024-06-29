@@ -54,6 +54,13 @@ const login = async (req, res) => {
     return res.status(400).send("Invalid email or password");
   }
 
+  const timezone = user.timezone;
+  const currentDateTime = moment().tz(timezone).format("YYYY-MM-DD HH:mm:ss");
+
+  await knex("users").where({ id: user.id }).update({
+    last_login: currentDateTime,
+  });
+
   const token = jwt.sign(
     { id: user.id, email: user.email },
     process.env.JWT_KEY,
@@ -69,7 +76,7 @@ const fetchUser = async (req, res) => {
     const decodedToken = jwt.verify(token, process.env.JWT_KEY);
 
     const user = await knex("users")
-      .select("id", "username", "email", "timezone")
+      .select("id", "username", "email", "timezone", "last_login")
       .where({ id: decodedToken.id })
       .first();
 
