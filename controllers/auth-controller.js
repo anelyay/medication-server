@@ -43,57 +43,67 @@ const login = async (req, res) => {
     return res.status(400).send("Please enter the required fields");
   }
 
-  const user = await knex("users").where({ email: email }).first();
+  try {
+    const user = await knex("users")
+      .select("id", "email", "password", "timezone", "last_login")
+      .where({ email: email })
+      .first();
 
-  if (!user) {
-    return res.status(400).send("Invalid email");
+    if (!user) {
+      return res.status(400).send("Invalid email");
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(400).send("Invalid email or password");
+    }
+
+    // Parse the last_login date to handle timezone correctly
+    const lastLoginDateTime = moment(user.last_login).tz(user.timezone);
+    const currentDate = moment().tz(user.timezone).format("YYYY-MM-DD");
+
+    // Format last_login for comparison
+    const lastLoginDate = lastLoginDateTime.format("YYYY-MM-DD");
+
+    if (!lastLoginDate || currentDate !== lastLoginDate) {
+      // Reset med_taken status
+      await knex("schedule")
+        .update({ med_taken: false })
+        .where({ user_id: user.id });
+
+      // Update last_login date
+      await knex("users")
+        .update({
+          last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
+        })
+        .where({ id: user.id });
+
+      console.log(
+        `Reset med_taken for user ${user.id} at ${moment()
+          .tz(user.timezone)
+          .format("YYYY-MM-DD HH:mm:ss")}`
+      );
+    } else {
+      // Update last_login time
+      await knex("users")
+        .update({
+          last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
+        })
+        .where({ id: user.id });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_KEY,
+      { expiresIn: "24h" }
+    );
+
+    res.send({ token });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).send("Internal server error");
   }
-
-  const passwordMatch = await bcrypt.compare(password, user.password);
-
-  if (!passwordMatch) {
-    return res.status(400).send("Invalid email or password");
-  }
-
-  const timezone = user.timezone;
-  const currentDateTime = moment().tz(timezone);
-  const currentDate = currentDateTime.format("YYYY-MM-DD");
-
-  const lastLoginDate = user.last_login
-    ? moment.tz(user.last_login, timezone).format("YYYY-MM-DD")
-    : null;
-
-  if (!lastLoginDate || currentDate !== lastLoginDate) {
-    // Reset med_taken status
-    await knex("schedule")
-      .update({ med_taken: false })
-      .where({ user_id: user.id });
-
-    // Update last_login date
-    await knex("users")
-      .update({ last_login: currentDateTime.format("YYYY-MM-DD HH:mm:ss") })
-      .where({ id: user.id });
-
-    // console.log(
-    //   `Reset med_taken for user ${user.id} at ${currentDateTime.format(
-    //     "YYYY-MM-DD HH:mm:ss"
-    //   )}`
-    // );
-  } else {
-    // Update last_login time
-    await knex("users")
-      .update({ last_login: currentDateTime.format("YYYY-MM-DD HH:mm:ss") })
-      .where({ id: user.id });
-  }
-
-
-  const token = jwt.sign(
-    { id: user.id, email: user.email },
-    process.env.JWT_KEY,
-    { expiresIn: "24h" }
-  );
-
-  res.send({ token });
 };
 
 const fetchUser = async (req, res) => {
