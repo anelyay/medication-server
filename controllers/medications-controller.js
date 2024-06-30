@@ -244,6 +244,7 @@ const updateMedication = async (req, res) => {
       return {
         medication_id: medicationId,
         med_time: entry.med_time,
+        user_id: userId,
       };
     });
 
@@ -316,6 +317,7 @@ const addMedication = async (req, res) => {
       medication_id: newMedicationId,
       med_time: entry.med_time,
       med_taken: entry.med_taken,
+      user_id: userId,
     }));
 
     await knex("schedule").insert(scheduleEntries);
