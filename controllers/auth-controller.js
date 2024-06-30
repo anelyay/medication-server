@@ -72,26 +72,14 @@ const login = async (req, res) => {
         .update({ med_taken: false })
         .where({ user_id: user.id });
 
-      // Update last_login date
-      await knex("users")
-        .update({
-          last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
-        })
-        .where({ id: user.id });
-
-      console.log(
-        `Reset med_taken for user ${user.id} at ${moment()
-          .tz(user.timezone)
-          .format("YYYY-MM-DD HH:mm:ss")}`
-      );
-    } else {
+    }
       // Update last_login time
       await knex("users")
         .update({
           last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
         })
         .where({ id: user.id });
-    }
+
 
     const token = jwt.sign(
       { id: user.id, email: user.email },
