@@ -457,6 +457,8 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
   }
 };
 
+
+
 // cron.schedule("22 20 * * *", async () => {
 //   try {
 //     await knex("schedule").update({ med_taken: false });

@@ -177,10 +177,41 @@ const updateUser = async (req, res) => {
   }
 };
 
+// const refresher = async (req, res) => {
+//   try {
+//     const token = req.headers.authorization.split(" ")[1];
+//     const decodedToken = jwt.verify(token, process.env.JWT_KEY);
+
+//     const user = await knex("users")
+//       .select("id", "username", "email", "timezone", "last_login")
+//       .where({ id: decodedToken.id })
+//       .first();
+
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+
+//     // Update schedule for the user in a transaction
+//     await knex.transaction(async (trx) => {
+//       await trx("schedule")
+//         .where({ user_id: user.id })
+//         .update({ med_taken: false });
+//     });
+
+//     return res.status(200).json({ message: "Schedule updated successfully" });
+//   } catch (error) {
+//     console.error("Error in refresher function:", error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+
 const refresher = async (req, res) => {
   try {
     const token = req.headers.authorization.split(" ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_KEY);
+
+    console.log("Decoded token:", decodedToken); // Log decoded token for debugging
 
     const user = await knex("users")
       .select("id", "username", "email", "timezone", "last_login")
@@ -188,14 +219,22 @@ const refresher = async (req, res) => {
       .first();
 
     if (!user) {
+      console.error("User not found for ID:", decodedToken.id);
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Update schedule for the user in a transaction
+    console.log("User details:", user); // Log user details for debugging
+
     await knex.transaction(async (trx) => {
-      await trx("schedule")
+      const numUpdated = await trx("schedule")
         .where({ user_id: user.id })
         .update({ med_taken: false });
+
+      console.log(`Updated ${numUpdated} rows in schedule table`); // Log number of rows updated
+
+      if (numUpdated === 0) {
+        console.log(`No rows updated for user ${user.id}`);
+      }
     });
 
     return res.status(200).json({ message: "Schedule updated successfully" });
