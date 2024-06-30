@@ -59,27 +59,26 @@ const login = async (req, res) => {
       return res.status(400).send("Invalid email or password");
     }
 
-    // Parse the last_login date to handle timezone correctly
-    const lastLoginDateTime = moment(user.last_login).tz(user.timezone);
     const currentDate = moment().tz(user.timezone).format("YYYY-MM-DD");
+    const lastLoginDate = moment(user.last_login)
+      .tz(user.timezone)
+      .format("YYYY-MM-DD");
 
-    // Format last_login for comparison
-    const lastLoginDate = lastLoginDateTime.format("YYYY-MM-DD");
-
-    if (!lastLoginDate || currentDate !== lastLoginDate) {
+    if (!user.last_login || currentDate !== lastLoginDate) {
       // Reset med_taken status
       await knex("schedule")
         .update({ med_taken: false })
         .where({ user_id: user.id });
 
+      console.log(`Reset med_taken for user ${user.id} at ${currentDate}`);
     }
-      // Update last_login time
-      await knex("users")
-        .update({
-          last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
-        })
-        .where({ id: user.id });
 
+    // Update last_login time
+    await knex("users")
+      .update({
+        last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
+      })
+      .where({ id: user.id });
 
     const token = jwt.sign(
       { id: user.id, email: user.email },
