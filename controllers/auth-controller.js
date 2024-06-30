@@ -221,7 +221,7 @@ const refresher = async (req, res) => {
     }
 
     // Query all medications and med_taken status related to user.id
-        const medication_status = await knex("schedule")
+        const medications = await knex("schedule")
            .select("id", "medication_id", "med_taken")
            .where({ user_id: user.id });
 
