@@ -179,30 +179,24 @@ const updateUser = async (req, res) => {
 
 const refresher = async (req, res) => {
   try {
-    // Assuming you're using JWT and the user information is decoded from the token
-    const token = req.headers.authorization.split(" ")[1]; // Assuming Bearer token format
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET); // Verify and decode the token
+    const token = req.headers.authorization.split(" ")[1];
+    const decodedToken = jwt.verify(token, process.env.JWT_KEY);
 
-    if (!decodedToken || !decodedToken.id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const userId = decodedToken.id;
-
-    // Fetch user details from database using userId
     const user = await knex("users")
-      .select("id", "email", "password", "timezone", "last_login")
-      .where({ id: userId }) // Fetch user by userId instead of email
+      .select("id", "username", "email", "timezone", "last_login")
+      .where({ id: decodedToken.id })
       .first();
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Update schedule for the user
-    await knex("schedule")
-      .update({ med_taken: false })
-      .where({ user_id: userId }); // Use userId for updating schedule
+    // Update schedule for the user in a transaction
+    await knex.transaction(async (trx) => {
+      await trx("schedule")
+        .where({ user_id: user.id })
+        .update({ med_taken: false });
+    });
 
     return res.status(200).json({ message: "Schedule updated successfully" });
   } catch (error) {
@@ -210,6 +204,7 @@ const refresher = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 module.exports = {
