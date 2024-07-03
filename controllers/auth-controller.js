@@ -164,34 +164,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-// const refresher = async (req, res) => {
-//   try {
-//     const token = req.headers.authorization.split(" ")[1];
-//     const decodedToken = jwt.verify(token, process.env.JWT_KEY);
-
-//     const user = await knex("users")
-//       .select("id", "username", "email", "timezone", "last_login")
-//       .where({ id: decodedToken.id })
-//       .first();
-
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     // Update schedule for the user in a transaction
-//     await knex.transaction(async (trx) => {
-//       await trx("schedule")
-//         .where({ user_id: user.id })
-//         .update({ med_taken: false });
-//     });
-
-//     return res.status(200).json({ message: "Schedule updated successfully" });
-//   } catch (error) {
-//     console.error("Error in refresher function:", error);
-//     return res.status(500).json({ error: "Internal server error" });
-//   }
-// };
-
 
 const refresher = async (req, res) => {
   try {
@@ -206,24 +178,16 @@ const refresher = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    // Query all medications and med_taken status related to user.id
         const medications = await knex("schedule")
            .select("id", "medication_id", "med_taken")
            .where({ user_id: user.id });
 
-    // Log medications for debugging
-    console.log(`Medications for user ${user.id}:`, medications);
 
-    // Update schedule for the user in a transaction
     await knex.transaction(async (trx) => {
       const numUpdated = await trx("schedule")
         .where({ user_id: user.id })
         .update({ med_taken: false });
 
-      console.log(
-        `Updated ${numUpdated} rows in schedule table for user ${user.id}`
-      );
 
       if (numUpdated === 0) {
         console.log(`No rows updated for user ${user.id}`);
