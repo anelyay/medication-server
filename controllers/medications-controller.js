@@ -469,54 +469,54 @@ const markMedicationAsTakenWithNFC = async (req, res) => {
 //   }
 // });
 
-const getNextMidnightDate = (timezone) => {
-  const nextMidnight = moment.tz(timezone).endOf("day").add(1, "second");
-  return nextMidnight.toDate(); // Convert to JavaScript Date object
-};
+// const getNextMidnightDate = (timezone) => {
+//   const nextMidnight = moment.tz(timezone).endOf("day").add(1, "second");
+//   return nextMidnight.toDate(); // Convert to JavaScript Date object
+// };
 
-const resetMedTaken = async (userId) => {
-  try {
-    await knex("schedule")
-      .update({ med_taken: false })
-      .where({ user_id: userId });
-    console.log(
-      `Reset med_taken for user ${userId} at ${moment().format(
-        "YYYY-MM-DD HH:mm:ss"
-      )}`
-    );
-  } catch (error) {
-    console.error(
-      `Error resetting med_taken status for user ${userId}:`,
-      error
-    );
-  }
-};
+// const resetMedTaken = async (userId) => {
+//   try {
+//     await knex("schedule")
+//       .update({ med_taken: false })
+//       .where({ user_id: userId });
+//     console.log(
+//       `Reset med_taken for user ${userId} at ${moment().format(
+//         "YYYY-MM-DD HH:mm:ss"
+//       )}`
+//     );
+//   } catch (error) {
+//     console.error(
+//       `Error resetting med_taken status for user ${userId}:`,
+//       error
+//     );
+//   }
+// };
 
-const scheduleMidnightReset = async () => {
-  try {
-    const users = await knex("users").select("id", "timezone");
+// const scheduleMidnightReset = async () => {
+//   try {
+//     const users = await knex("users").select("id", "timezone");
 
-    users.forEach((user) => {
-      const nextMidnightDate = getNextMidnightDate(user.timezone);
-      console.log(
-        `Scheduling reset for user ${user.id} at ${nextMidnightDate} (${user.timezone})`
-      );
+//     users.forEach((user) => {
+//       const nextMidnightDate = getNextMidnightDate(user.timezone);
+//       console.log(
+//         `Scheduling reset for user ${user.id} at ${nextMidnightDate} (${user.timezone})`
+//       );
 
-      schedule.scheduleJob(nextMidnightDate, async () => {
-        await resetMedTaken(user.id);
-      });
+//       schedule.scheduleJob(nextMidnightDate, async () => {
+//         await resetMedTaken(user.id);
+//       });
 
-      console.log(
-        `Midnight reset scheduled for user ${user.id} in ${user.timezone}`
-      );
-    });
+//       console.log(
+//         `Midnight reset scheduled for user ${user.id} in ${user.timezone}`
+//       );
+//     });
 
-  } catch (error) {
-    console.error("Error scheduling midnight reset:", error);
-  }
-};
+//   } catch (error) {
+//     console.error("Error scheduling midnight reset:", error);
+//   }
+// };
 
-scheduleMidnightReset();
+// scheduleMidnightReset();
 
 
 module.exports = {
