@@ -99,6 +99,8 @@ const login = async (req, res) => {
           `updated last login for user ${user.id} to ${newLastLogin}`
         );
       }
+            await trx.commit();
+
     });
 
     const token = jwt.sign(
