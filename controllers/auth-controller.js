@@ -60,7 +60,7 @@ const login = async (req, res) => {
       : null;
 
     console.log(
-      `Current date: ${currentDate}, Last login date: ${lastLoginDate}`
+      `Current date: ${currentDate}, Last login date: ${user.last_login}, ${lastLoginDate}`
     );
 
     // Check if it's the first login of the day
