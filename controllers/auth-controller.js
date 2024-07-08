@@ -35,6 +35,7 @@ const register = async (req, res) => {
     res.status(400).send("Registration failed!");
   }
 };
+
 const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -58,6 +59,10 @@ const login = async (req, res) => {
       ? moment(user.last_login).tz(user.timezone).format("YYYY-MM-DD")
       : null;
 
+    console.log(
+      `Current date: ${currentDate}, Last login date: ${lastLoginDate}`
+    );
+
     // Check if it's the first login of the day
     const isFirstLoginToday = !lastLoginDate || lastLoginDate !== currentDate;
 
@@ -67,6 +72,8 @@ const login = async (req, res) => {
         const numUpdated = await trx("schedule")
           .where({ user_id: user.id })
           .update({ med_taken: false });
+
+        console.log(`updated ${numUpdated} rows for user ${user.id}`);
 
         if (numUpdated === 0) {
           console.log(`No rows updated for user ${user.id}`);
@@ -79,6 +86,8 @@ const login = async (req, res) => {
           last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
         })
         .where({ id: user.id });
+
+      console.log(`updated last login for user ${user.id}`);
     });
 
     const token = jwt.sign(
@@ -93,8 +102,6 @@ const login = async (req, res) => {
     res.status(500).send("Internal server error");
   }
 };
-
-
 
 const fetchUser = async (req, res) => {
   try {
