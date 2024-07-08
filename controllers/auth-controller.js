@@ -35,7 +35,6 @@ const register = async (req, res) => {
     res.status(400).send("Registration failed!");
   }
 };
-
 const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -46,48 +45,42 @@ const login = async (req, res) => {
   try {
     const user = await knex("users")
       .select("id", "email", "password", "timezone", "last_login")
-      .where({ email }) //
+      .where({ email })
       .first();
 
     if (!user) {
       return res.status(400).send("Invalid email");
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatch) {
-      return res.status(400).send("Invalid email or password");
-    }
-
+    // Compare last_login with current date
     const currentDate = moment().tz(user.timezone).format("YYYY-MM-DD");
     const lastLoginDate = user.last_login
       ? moment(user.last_login).tz(user.timezone).format("YYYY-MM-DD")
       : null;
 
-    console.log(
-      `Current date: ${currentDate}, Last login date: ${lastLoginDate}`
-    );
+    // Check if it's the first login of the day
+    const isFirstLoginToday = !lastLoginDate || lastLoginDate !== currentDate;
 
-  await knex.transaction(async (trx) => {
-    // Reset med_taken status
-    const numUpdated = await trx("schedule")
-      .where({ user_id: user.id })
-      .update({ med_taken: false });
+    await knex.transaction(async (trx) => {
+      // Reset med_taken status if it's the first login today
+      if (isFirstLoginToday) {
+        const numUpdated = await trx("schedule")
+          .where({ user_id: user.id })
+          .update({ med_taken: false });
 
-    if (numUpdated === 0) {
-      console.log(`No rows updated for user ${user.id}`);
-    }
+        if (numUpdated === 0) {
+          console.log(`No rows updated for user ${user.id}`);
+        }
+      }
 
-    // Update last_login time
-    await trx("users")
-      .update({
-        last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
-      })
-      .where({ id: user.id });
-  });
+      // Update last_login time
+      await trx("users")
+        .update({
+          last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
+        })
+        .where({ id: user.id });
+    });
 
-
-  
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_KEY,
@@ -100,6 +93,8 @@ const login = async (req, res) => {
     res.status(500).send("Internal server error");
   }
 };
+
+
 
 const fetchUser = async (req, res) => {
   try {
