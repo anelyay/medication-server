@@ -37,25 +37,25 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!username || !password) {
+  if (!email || !password) {
     return res.status(400).send("Please enter the required fields");
   }
 
   try {
     const user = await knex("users")
       .select("id", "email", "password", "timezone", "last_login")
-      .where({ username })
+      .where({ email })
       .first();
 
     if (!user) {
-      return res.status(400).send("Invalid username");
+      return res.status(400).send("Invalid email");
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
-      return res.status(400).send("Invalid password");
+      return res.status(400).send("Invalid email or password");
     }
 
     // Compare last_login with current date
