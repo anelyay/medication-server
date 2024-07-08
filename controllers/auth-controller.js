@@ -173,12 +173,12 @@ const updateUser = async (req, res) => {
     res.status(500).json({ message: "Failed to update user" });
   }
 };
+
 const refresher = async (req, res) => {
   try {
     const token = req.headers.authorization.split(" ")[1];
     const decodedToken = jwt.verify(token, process.env.JWT_KEY);
 
-    // Fetch user data
     const user = await knex("users")
       .select("id", "username", "email", "timezone", "last_login")
       .where({ id: decodedToken.id })
@@ -187,14 +187,26 @@ const refresher = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+    const medications = await knex("schedule")
+      .select("id", "medication_id", "med_taken")
+      .where({ user_id: user.id });
+
+    console.log(`medications are : ${medications} for user ${user.id}`)
 
     await knex.transaction(async (trx) => {
-      const numUpdated = await trx("schedule")
-        .where({ user_id: user.id })
-        .update({ med_taken: false });
+      try {
+        const numUpdated = await trx("schedule")
+          .where({ user_id: user.id })
+          .update({ med_taken: false });
 
-      if (numUpdated === 0) {
-        console.log(`No rows updated for user ${user.id}`);
+        if (numUpdated === 0) {
+          console.log(`No rows updated for user ${user.id}`);
+        }
+
+        await trx.commit();
+      } catch (error) {
+        await trx.rollback();
+        throw error; 
       }
     });
 
