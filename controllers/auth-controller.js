@@ -64,26 +64,30 @@ const login = async (req, res) => {
       ? moment(user.last_login).tz(user.timezone).format("YYYY-MM-DD")
       : null;
 
-    if (!user.last_login || currentDate !== lastLoginDate) {
-      // Reset med_taken status
-      await knex("schedule")
-        .update({ med_taken: false })
-        .where({ user_id: user.id });
+    console.log(
+      `Current date: ${currentDate}, Last login date: ${lastLoginDate}`
+    );
 
-      console.log(`Reset med_taken for user ${user.id} at ${currentDate}`);
+  await knex.transaction(async (trx) => {
+    // Reset med_taken status
+    const numUpdated = await trx("schedule")
+      .where({ user_id: user.id })
+      .update({ med_taken: false });
+
+    if (numUpdated === 0) {
+      console.log(`No rows updated for user ${user.id}`);
     }
 
     // Update last_login time
-    const updateResult = await knex("users")
+    await trx("users")
       .update({
         last_login: moment().tz(user.timezone).format("YYYY-MM-DD HH:mm:ss"),
       })
       .where({ id: user.id });
+  });
 
-    console.log(
-      `Updated last_login for user ${user.id}. Rows affected: ${updateResult}`
-    );
 
+  
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_KEY,
