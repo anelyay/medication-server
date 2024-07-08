@@ -66,36 +66,40 @@ const login = async (req, res) => {
     // Check if it's the first login of the day
     const isFirstLoginToday = !lastLoginDate || lastLoginDate !== currentDate;
 
-     await knex.transaction(async (trx) => {
-       if (isFirstLoginToday) {
-         const numUpdated = await trx("schedule")
-           .where({ user_id: user.id })
-           .update({ med_taken: false });
+    await knex.transaction(async (trx) => {
+      if (isFirstLoginToday) {
+        const numUpdated = await trx("schedule")
+          .where({ user_id: user.id })
+          .update({ med_taken: false });
 
-         console.log(`updated ${numUpdated} rows for user ${user.id}`);
+        console.log(`updated ${numUpdated} rows for user ${user.id}`);
 
-         if (numUpdated === 0) {
-           console.log(`No rows updated for user ${user.id}`);
-         }
-       }
+        if (numUpdated === 0) {
+          console.log(`No rows updated for user ${user.id}`);
+        }
+      }
 
-       // Update last_login time
-       const newLastLogin = moment()
-         .tz(user.timezone)
-         .format("YYYY-MM-DD HH:mm:ss");
-       const rowsUpdated = await trx("users")
-         .where({ id: user.id })
-         .update({ last_login: newLastLogin });
+      // Update last_login time
+      const newLastLogin = moment()
+        .tz(user.timezone)
+        .format("YYYY-MM-DD HH:mm:ss");
 
-       if (rowsUpdated === 0) {
-         console.error(`Failed to update last_login for user ${user.id}`);
-       } else {
-         console.log(
-           `updated last login for user ${user.id} to ${newLastLogin}`
-         );
-       }
-     });
+      console.log(
+        `Attempting to update last_login for user ${user.id} to ${newLastLogin}`
+      );
 
+      const rowsUpdated = await trx("users")
+        .where({ id: user.id })
+        .update({ last_login: newLastLogin });
+
+      if (rowsUpdated === 0) {
+        console.error(`Failed to update last_login for user ${user.id}`);
+      } else {
+        console.log(
+          `updated last login for user ${user.id} to ${newLastLogin}`
+        );
+      }
+    });
 
     const token = jwt.sign(
       { id: user.id, email: user.email },
@@ -198,9 +202,9 @@ const refresher = async (req, res) => {
       .select("id", "medication_id", "med_taken")
       .where({ user_id: user.id });
 
-console.log(
-  `Medications are: ${JSON.stringify(medications)} for user ${user.id}`
-);
+    console.log(
+      `Medications are: ${JSON.stringify(medications)} for user ${user.id}`
+    );
 
     await knex.transaction(async (trx) => {
       try {
