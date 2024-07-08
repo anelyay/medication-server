@@ -53,10 +53,15 @@ const login = async (req, res) => {
       return res.status(400).send("Invalid email");
     }
 
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(400).send("Invalid email or password");
+    }
+
     // Compare last_login with current date
     const currentDate = moment().tz(user.timezone).format("YYYY-MM-DD");
     const lastLoginDate = user.last_login
-      ? moment(user.last_login).format("YYYY-MM-DD")
+      ? moment(user.last_login).format("YYYY-MM-DD") //this is technically in UTC but actually correct in user's timezone
       : null;
 
     console.log(
@@ -99,8 +104,7 @@ const login = async (req, res) => {
           `updated last login for user ${user.id} to ${newLastLogin}`
         );
       }
-            await trx.commit();
-
+      await trx.commit();
     });
 
     const token = jwt.sign(
@@ -109,7 +113,7 @@ const login = async (req, res) => {
       { expiresIn: "24h" }
     );
 
-    res.send({ token });
+    res.status(200).send({ token });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).send("Internal server error");
