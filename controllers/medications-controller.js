@@ -350,9 +350,9 @@ const removeMedication = async (req, res) => {
 
   try {
     const rowsDeleted = await knex("medications")
-      .join("patients", "medications.patient_id", "patients.id") /////
+      .join("patients", "medications.patient_id", "patients.id")
       .where("medications.id", medicationId)
-      .andWhere("patients.user_id", userId) // Ensure user owns this medication
+      .andWhere("patients.user_id", userId)
       .delete();
 
     if (rowsDeleted === 0) {
