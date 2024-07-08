@@ -191,7 +191,9 @@ const refresher = async (req, res) => {
       .select("id", "medication_id", "med_taken")
       .where({ user_id: user.id });
 
-    console.log(`medications are : ${medications} for user ${user.id}`)
+console.log(
+  `Medications are: ${JSON.stringify(medications)} for user ${user.id}`
+);
 
     await knex.transaction(async (trx) => {
       try {
@@ -206,7 +208,7 @@ const refresher = async (req, res) => {
         await trx.commit();
       } catch (error) {
         await trx.rollback();
-        throw error; 
+        throw error;
       }
     });
 

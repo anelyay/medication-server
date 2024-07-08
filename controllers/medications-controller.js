@@ -228,6 +228,7 @@ const updateMedication = async (req, res) => {
       med_dose,
       quantity,
       notes,
+      user_id: userId,
     });
 
     const currentSchedule = await knex("schedule")
@@ -240,7 +241,6 @@ const updateMedication = async (req, res) => {
     }, {});
 
     const scheduleEntries = schedule.map((entry) => {
-      const currentEntry = currentScheduleMap[entry.med_time];
       return {
         medication_id: medicationId,
         med_time: entry.med_time,
