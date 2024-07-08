@@ -56,7 +56,7 @@ const login = async (req, res) => {
     // Compare last_login with current date
     const currentDate = moment().tz(user.timezone).format("YYYY-MM-DD");
     const lastLoginDate = user.last_login
-      ? moment(user.last_login).tz(user.timezone).format("YYYY-MM-DD")
+      ? moment(user.last_login).format("YYYY-MM-DD")
       : null;
 
     console.log(
