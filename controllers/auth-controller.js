@@ -55,10 +55,9 @@ const login = async (req, res) => {
 
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
-      return res.status(400).send("Invalid email or password");
+      return res.status(400).send("Invalid password");
     }
 
-    // Compare last_login with current date
     const currentDate = moment().tz(user.timezone).format("YYYY-MM-DD");
     const lastLoginDate = user.last_login
       ? moment(user.last_login).format("YYYY-MM-DD") //this is technically in UTC but actually correct in user's timezone
@@ -68,7 +67,6 @@ const login = async (req, res) => {
       `Current date: ${currentDate}, Last login date: ${user.last_login}, ${lastLoginDate}`
     );
 
-    // Check if it's the first login of the day
     const isFirstLoginToday = !lastLoginDate || lastLoginDate !== currentDate;
 
     await knex.transaction(async (trx) => {
@@ -84,7 +82,6 @@ const login = async (req, res) => {
         }
       }
 
-      // Update last_login time
       const newLastLogin = moment()
         .tz(user.timezone)
         .format("YYYY-MM-DD HH:mm:ss");
