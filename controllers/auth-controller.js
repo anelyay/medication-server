@@ -7,15 +7,15 @@ const register = async (req, res) => {
   const { username, email, password, timezone } = req.body;
 
   if (!username || !email || !password || !timezone) {
-    return res.status(400).send("Please enter the required fields");
+    return res
+      .status(400)
+      .json({ message: "Please enter the required fields" });
   }
 
   const exists = await knex("users").where({ email: email });
 
   if (exists.length !== 0) {
-    return res.status(400).json({
-      message: "email already exists",
-    });
+        return res.status(400).json({ message: "Email already exists" });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -29,7 +29,7 @@ const register = async (req, res) => {
 
   try {
     await knex("users").insert(newUser);
-    res.status(201).send("Registered successfully!");
+    res.status(201).json({ message: "Registered successfully!" });
   } catch (error) {
     console.log(error);
     res.status(400).send("Registration failed!");
