@@ -1,7 +1,6 @@
-///
 const knex = require("knex")(require("../knexfile"));
-const cron = require("node-cron");
-const schedule = require("node-schedule");
+// const cron = require("node-cron");
+// const schedule = require("node-schedule");
 const moment = require("moment-timezone");
 
 const logActivity = async (
@@ -382,13 +381,29 @@ const markMedicationAsTaken = async (req, res) => {
       return res.status(404).json({ error: "Medication not found" });
     }
 
+    // check if medication has been taken today
+     const scheduleEntry = await knex("schedule")
+       .where({ medication_id, med_time })
+       .first();
+
+     if (!scheduleEntry) {
+       return res.status(404).json({ error: "Schedule entry not found" });
+     }
+
+     if (scheduleEntry.med_taken) {
+       return res
+         .status(400)
+         .json({ error: "Medication already marked as taken" });
+     }
+
+
     const rowsUpdated = await knex("schedule")
       .where({ medication_id, med_time })
       .update({ med_taken: med_taken ? 1 : 0 });
 
-    if (rowsUpdated === 0) {
-      return res.status(404).json({ error: "Schedule entry not found" });
-    }
+    // if (rowsUpdated === 0) {
+    //   return res.status(404).json({ error: "Schedule entry not found" });
+    // }
 
     const originalQuantity = medication.quantity;
     const newQuantity = originalQuantity - 1;
