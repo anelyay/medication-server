@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const nfcController = require("../controllers/nfc-controller");
+const nfcController = require("../controllers/nfc-conroller");
 
 
 // router.route("/").post(nfcController);
