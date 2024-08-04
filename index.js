@@ -16,7 +16,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use("/nfctest");///
+app.use("/nfctest", nfcRoute);///
 
 
 function authenticateToken(req, res, next) {
