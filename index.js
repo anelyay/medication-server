@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const patientsRouter = require("./routes/patient-route");
 const medicationsRouter = require("./routes/medication-route");
 const authRoutes = require("./routes/auth");
+const nfcRoute = require("./routes/nfc"); ///
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/nfctest");///
 
 
 function authenticateToken(req, res, next) {
@@ -39,4 +41,3 @@ app.use("/auth", authRoutes);
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
